@@ -61,6 +61,7 @@ export class RunService {
           parts: [{ type: 'text', content: text }],
           createdAt: new Date(finishedAt).toISOString(),
           modelId: input.model.id,
+          runId,
           stats: {
             ttftMs: (firstTokenAt ?? finishedAt) - startedAt,
             tokensPerSec: streamMs > 0 ? Math.round((deltaCount / streamMs) * 1000) : deltaCount,

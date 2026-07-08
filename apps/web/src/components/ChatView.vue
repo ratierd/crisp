@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { fetchServerSentEvents, useChat } from '@crisp/ai/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import type { Message, RunErrorKind, RunStats } from '@crisp/contracts';
+import type { Feedback, Message, RunErrorKind, RunStats } from '@crisp/contracts';
 import * as api from '../lib/api';
 import { useAppStore } from '../stores/app';
 import ComposerBox from './ComposerBox.vue';
@@ -19,6 +19,9 @@ interface MessageMeta {
   stats?: RunStats;
   stoppedEarly?: boolean;
   modelName?: string;
+  /** The Run that produced this message — the Feedback anchor. */
+  runId?: string;
+  feedback?: Feedback | null;
 }
 const meta = reactive(new Map<string, MessageMeta>());
 const errorInfo = ref<{ kind: RunErrorKind; provider: string } | null>(null);
@@ -76,6 +79,7 @@ const chat = useChat({
               tokensPerSec: streamMs > 0 ? (tokenCount / streamMs) * 1000 : tokenCount,
             },
             modelName: liveModelName,
+            runId: liveRunId.value ?? undefined,
           });
         }
         endRun();
@@ -155,7 +159,12 @@ const stop = async () => {
   if (runId) void api.stopRun(runId); // server persists the partial
   chat.stop();
   if (hadTokens && liveMessageId) {
-    meta.set(liveMessageId, { ...meta.get(liveMessageId), stoppedEarly: true, modelName: liveModelName });
+    meta.set(liveMessageId, {
+      ...meta.get(liveMessageId),
+      stoppedEarly: true,
+      modelName: liveModelName,
+      runId: runId ?? undefined,
+    });
   } else {
     errorInfo.value = { kind: 'aborted', provider: liveModelName || 'the provider' };
   }
@@ -174,6 +183,17 @@ const regenerate = () => {
   void chat.reload();
 };
 
+const onFeedback = (messageId: string, score: 'up' | 'down' | null, comment?: string) => {
+  const current = meta.get(messageId);
+  if (!current?.runId) return;
+  // optimistic: the vote paints immediately, the PUT trails behind
+  meta.set(messageId, {
+    ...current,
+    feedback: score ? { score, ...(comment ? { comment } : {}) } : null,
+  });
+  void api.setFeedback(current.runId, { score, ...(comment ? { comment } : {}) });
+};
+
 // ---- initial load + resume ------------------------------------------------
 
 const applyServerMessages = (messages: Message[]) => {
@@ -186,10 +206,12 @@ const applyServerMessages = (messages: Message[]) => {
     })),
   );
   for (const message of messages) {
-    if (message.stats || message.stoppedEarly) {
+    if (message.stats || message.stoppedEarly || message.runId) {
       meta.set(message.id, {
         ...(message.stats ? { stats: message.stats } : {}),
         ...(message.stoppedEarly ? { stoppedEarly: true } : {}),
+        ...(message.runId ? { runId: message.runId } : {}),
+        ...(message.feedback ? { feedback: message.feedback } : {}),
         modelName: modelNameFor(message.modelId),
       });
     } else if (message.modelId) {
@@ -304,7 +326,10 @@ defineExpose({ running });
               :stats="message.meta?.stats ?? null"
               :stopped-early="message.meta?.stoppedEarly"
               :model-name="message.meta?.modelName"
+              :run-id="message.meta?.runId"
+              :feedback="message.meta?.feedback"
               @regenerate="regenerate"
+              @feedback="(score, comment) => onFeedback(message.id, score, comment)"
             />
           </template>
 

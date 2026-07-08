@@ -1,8 +1,8 @@
 import { toServerSentEventsResponse } from '@crisp/ai';
 import { Hono } from 'hono';
-import { chatRequestSchema } from '@crisp/contracts';
+import { chatRequestSchema, feedbackRequestSchema } from '@crisp/contracts';
 import type { StreamChunk } from '@crisp/ai';
-import type { ConversationRepository, RunStreamStore } from '@crisp/domain';
+import type { ConversationRepository, FeedbackSink, RunStreamStore } from '@crisp/domain';
 import { ConversationService, RunService, TitleService } from '@crisp/domain';
 import type { ModelGateway } from '@crisp/domain';
 import type { Env } from './infra/env';
@@ -16,6 +16,8 @@ export interface AppDeps {
   gateway: ModelGateway;
   conversations: ConversationRepository;
   runStreams: RunStreamStore;
+  /** Optional observability mirror for Feedback (ADR-0005). */
+  feedback?: FeedbackSink;
 }
 
 export const createApp = (deps: AppDeps) => {
@@ -91,6 +93,19 @@ export const createApp = (deps: AppDeps) => {
   app.post('/api/runs/:runId/stop', (c) => {
     const stopped = runManager.stop(c.req.param('runId'));
     return c.json({ stopped }, stopped ? 200 : 404);
+  });
+
+  app.put('/api/runs/:runId/feedback', async (c) => {
+    const parsed = feedbackRequestSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'Malformed feedback request.' }, 400);
+    const runId = c.req.param('runId');
+    const feedback = parsed.data.score
+      ? { score: parsed.data.score, ...(parsed.data.comment ? { comment: parsed.data.comment } : {}) }
+      : null;
+    const found = await deps.conversations.setFeedback(runId, feedback);
+    if (!found) return c.json({ error: 'No message for that run.' }, 404);
+    if (deps.feedback) void deps.feedback.record(runId, feedback); // mirror is best-effort
+    return c.json({ ok: true });
   });
 
   return { app, runManager };

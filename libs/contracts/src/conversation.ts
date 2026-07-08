@@ -17,6 +17,20 @@ export const runStatsSchema = z.object({
 });
 export type RunStats = z.infer<typeof runStatsSchema>;
 
+/** The user's thumbs verdict on a Run, shown on the Message it produced. */
+export const feedbackSchema = z.object({
+  score: z.enum(['up', 'down']),
+  comment: z.string().optional(),
+});
+export type Feedback = z.infer<typeof feedbackSchema>;
+
+/** Body of PUT /api/runs/:runId/feedback. `score: null` retracts the vote. */
+export const feedbackRequestSchema = z.object({
+  score: z.enum(['up', 'down']).nullable(),
+  comment: z.string().max(2000).optional(),
+});
+export type FeedbackRequest = z.infer<typeof feedbackRequestSchema>;
+
 export const messageSchema = z.object({
   id: z.string(),
   role: messageRoleSchema,
@@ -24,7 +38,10 @@ export const messageSchema = z.object({
   createdAt: z.string(),
   /** Assistant messages: the Model that wrote them. */
   modelId: z.string().optional(),
+  /** Assistant messages: the Run that produced them — the Feedback anchor. */
+  runId: z.string().optional(),
   stats: runStatsSchema.optional(),
+  feedback: feedbackSchema.optional(),
   /** The Run was stopped before RUN_FINISHED; prose is partial. */
   stoppedEarly: z.boolean().optional(),
 });

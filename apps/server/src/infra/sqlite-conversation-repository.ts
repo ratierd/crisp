@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Conversation, ConversationWithMessages, Message } from '@crisp/contracts';
+import type { Conversation, ConversationWithMessages, Feedback, Message } from '@crisp/contracts';
 import { messageSchema } from '@crisp/contracts';
 import type { ConversationRepository } from '@crisp/domain';
 
@@ -85,6 +85,21 @@ export class SqliteConversationRepository implements ConversationRepository {
     this.db
       .query('UPDATE conversations SET updated_at = ?2 WHERE id = ?1')
       .run(conversationId, new Date().toISOString());
+  }
+
+  async setFeedback(runId: string, feedback: Feedback | null): Promise<boolean> {
+    const row = this.db
+      .query<{ conversation_id: string; id: string; payload: string }, [string]>(
+        "SELECT conversation_id, id, payload FROM messages WHERE json_extract(payload, '$.runId') = ?1",
+      )
+      .get(runId);
+    if (!row) return false;
+    const { feedback: _previous, ...message } = messageSchema.parse(JSON.parse(row.payload));
+    const updated: Message = feedback ? { ...message, feedback } : message;
+    this.db
+      .query('UPDATE messages SET payload = ?3 WHERE conversation_id = ?1 AND id = ?2')
+      .run(row.conversation_id, row.id, JSON.stringify(updated));
+    return true;
   }
 
   async deleteMessagesAfter(conversationId: string, messageId: string): Promise<void> {

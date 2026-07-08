@@ -25,6 +25,18 @@ export const stopRun = async (runId: string): Promise<void> => {
   await fetch(`/api/runs/${runId}/stop`, { method: 'POST' });
 };
 
+/** Casts, changes, or (score: null) retracts the vote on a Run. */
+export const setFeedback = async (
+  runId: string,
+  feedback: { score: 'up' | 'down' | null; comment?: string },
+): Promise<void> => {
+  await fetch(`/api/runs/${runId}/feedback`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(feedback),
+  }).catch(() => undefined); // optimistic UI; the SQLite copy is refetched on reload
+};
+
 export interface ReplayEvent {
   type: string;
   [key: string]: unknown;

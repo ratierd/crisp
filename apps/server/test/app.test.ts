@@ -192,6 +192,64 @@ describe('resume', () => {
   });
 });
 
+describe('PUT /api/runs/:runId/feedback', () => {
+  const runExchange = async (app: ReturnType<typeof makeApp>['app'], conversations: FakeConversationRepository) => {
+    await readSse(
+      await app.request('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(chatBody('conv-fb', 'hello there')),
+      }),
+    );
+    await waitFor(() => (conversations.messages.get('conv-fb')?.length ?? 0) === 2);
+    return conversations.messages.get('conv-fb')![1]!;
+  };
+
+  const putFeedback = (app: ReturnType<typeof makeApp>['app'], runId: string, body: unknown) =>
+    app.request(`/api/runs/${runId}/feedback`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('persists a vote on the message, mirrors it, and retracts on null', async () => {
+    const mirrored: Array<{ runId: string; feedback: unknown }> = [];
+    const env = loadEnv({});
+    const conversations = new FakeConversationRepository();
+    const { app } = createApp({
+      env,
+      registry: new ModelRegistry(env, ollamaDown),
+      gateway: new AiModelGateway(env, { delayMs: 0 }),
+      conversations,
+      runStreams: new FakeRunStreamStore(),
+      feedback: { record: async (runId, feedback) => void mirrored.push({ runId, feedback }) },
+    });
+
+    const assistant = await runExchange(app, conversations);
+    expect(assistant.runId).toBeTruthy(); // RunService stamps the Run id
+
+    const vote = await putFeedback(app, assistant.runId!, { score: 'down', comment: 'too vague' });
+    expect(vote.status).toBe(200);
+    let stored = conversations.messages.get('conv-fb')![1]!;
+    expect(stored.feedback).toEqual({ score: 'down', comment: 'too vague' });
+    expect(mirrored).toEqual([{ runId: assistant.runId, feedback: { score: 'down', comment: 'too vague' } }]);
+
+    const retract = await putFeedback(app, assistant.runId!, { score: null });
+    expect(retract.status).toBe(200);
+    stored = conversations.messages.get('conv-fb')![1]!;
+    expect(stored.feedback).toBeUndefined();
+    expect(mirrored.at(-1)).toEqual({ runId: assistant.runId, feedback: null });
+  });
+
+  it('404s for unknown runs and 400s malformed bodies', async () => {
+    const { app, conversations } = makeApp();
+    const assistant = await runExchange(app, conversations);
+
+    expect((await putFeedback(app, 'no-such-run', { score: 'up' })).status).toBe(404);
+    expect((await putFeedback(app, assistant.runId!, { score: 'sideways' })).status).toBe(400);
+  });
+});
+
 describe('POST /api/runs/:runId/stop', () => {
   it('aborts a live run and keeps the partial message', async () => {
     const env = loadEnv({});

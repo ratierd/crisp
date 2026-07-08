@@ -1,4 +1,4 @@
-import type { Conversation, ConversationWithMessages, Message, Model } from '@crisp/contracts';
+import type { Conversation, ConversationWithMessages, Feedback, Message, Model } from '@crisp/contracts';
 
 /**
  * An AG-UI streaming event. Events cross the hexagon untranslated (ADR-0002);
@@ -42,6 +42,19 @@ export interface ConversationRepository {
   appendMessage(conversationId: string, message: Message): Promise<void>;
   /** Regenerate support: drops every Message after the given one. */
   deleteMessagesAfter(conversationId: string, messageId: string): Promise<void>;
+  /**
+   * Sets (or, with null, retracts) the Feedback on the Message a Run
+   * produced. Returns false when no Message carries that runId.
+   */
+  setFeedback(runId: string, feedback: Feedback | null): Promise<boolean>;
+}
+
+/**
+ * The port for mirroring Feedback to observability (ADR-0005). Implementations
+ * are best-effort: they must swallow their own failures.
+ */
+export interface FeedbackSink {
+  record(runId: string, feedback: Feedback | null): Promise<void>;
 }
 
 /**

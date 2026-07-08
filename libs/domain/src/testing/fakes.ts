@@ -1,4 +1,4 @@
-import type { Conversation, ConversationWithMessages, Message } from '@crisp/contracts';
+import type { Conversation, ConversationWithMessages, Feedback, Message } from '@crisp/contracts';
 import type { ConversationRepository, ModelGateway, RunEvent, RunStreamStore, StartRunOptions } from '../ports';
 
 /** In-memory ConversationRepository for tests. */
@@ -41,6 +41,19 @@ export class FakeConversationRepository implements ConversationRepository {
     const list = this.messages.get(conversationId) ?? [];
     const index = list.findIndex((m) => m.id === messageId);
     if (index >= 0) this.messages.set(conversationId, list.slice(0, index + 1));
+  }
+
+  async setFeedback(runId: string, feedback: Feedback | null): Promise<boolean> {
+    for (const [conversationId, list] of this.messages) {
+      const index = list.findIndex((m) => m.runId === runId);
+      if (index < 0) continue;
+      const { feedback: _previous, ...message } = list[index]!;
+      const updated = [...list];
+      updated[index] = feedback ? { ...message, feedback } : message;
+      this.messages.set(conversationId, updated);
+      return true;
+    }
+    return false;
   }
 }
 
