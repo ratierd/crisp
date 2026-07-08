@@ -81,3 +81,36 @@ export const chatRequestSchema = z.looseObject({
   }),
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
+
+/** One entry of the history the browser's local gateway sent to the model. */
+export const byoHistoryMessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string(),
+});
+
+export const byoUsageSchema = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  totalTokens: z.number(),
+});
+
+/**
+ * Body of POST /api/conversations/:id/byo-runs — a finished BYO-Ollama Run,
+ * executed in the browser (ADR-0004), delivered for persistence and
+ * observability. Mirrors what RunService records for server-side Runs.
+ */
+export const byoRunRequestSchema = z.object({
+  runId: z.uuid(),
+  modelId: z.string().startsWith('byo/'),
+  history: z.array(byoHistoryMessageSchema).min(1),
+  /** Absent when regenerating (the user Message is already persisted). */
+  userMessage: messageSchema.optional(),
+  assistantText: z.string(),
+  outcome: z.enum(['completed', 'stopped', 'failed']),
+  stats: runStatsSchema,
+  usage: byoUsageSchema.optional(),
+  startedAt: z.number(),
+  finishedAt: z.number(),
+  error: z.string().optional(),
+});
+export type ByoRunRequest = z.infer<typeof byoRunRequestSchema>;

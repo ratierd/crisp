@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { fetchServerSentEvents, useChat } from '@crisp/ai/vue';
+import { useChat } from '@crisp/ai/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { Feedback, Message, RunErrorKind, RunStats } from '@crisp/contracts';
 import * as api from '../lib/api';
+import { crispConnection, isByoModelId } from '../lib/byo';
 import { useAppStore } from '../stores/app';
 import ComposerBox from './ComposerBox.vue';
 import EmptyState from './EmptyState.vue';
@@ -34,6 +35,7 @@ let firstTokenAt = 0;
 let tokenCount = 0;
 let liveMessageId: string | null = null;
 let liveModelName = '';
+let liveByo = false; // BYO runs execute in this page — there's no server run to stop
 let stopping = false;
 
 // mid-stream resume
@@ -41,7 +43,8 @@ const reconnecting = ref(false);
 const resumeText = ref<string | null>(null);
 
 const chat = useChat({
-  connection: fetchServerSentEvents('/api/chat'),
+  // BYO models run in this page, everything else streams from the server
+  connection: crispConnection(() => store.selectedModel),
   threadId: props.conversationId,
   // getter: useChat watches this and pushes updates into the client,
   // so the picker's current Model rides along on every send
@@ -147,6 +150,7 @@ const send = (text: string) => {
   if (running.value || reconnecting.value) return;
   errorInfo.value = null;
   liveModelName = store.selectedModel?.displayName ?? '';
+  liveByo = isByoModelId(store.selectedModelId);
   void chat.sendMessage(text);
   scrollToBottom(true);
 };
@@ -156,7 +160,7 @@ const stop = async () => {
   stopping = true;
   const runId = liveRunId.value;
   const hadTokens = tokenCount > 0;
-  if (runId) void api.stopRun(runId); // server persists the partial
+  if (runId && !liveByo) void api.stopRun(runId); // server persists the partial
   chat.stop();
   if (hadTokens && liveMessageId) {
     meta.set(liveMessageId, {
@@ -174,12 +178,14 @@ const stop = async () => {
 const retry = () => {
   errorInfo.value = null;
   liveModelName = store.selectedModel?.displayName ?? '';
+  liveByo = isByoModelId(store.selectedModelId);
   void chat.reload();
 };
 
 const regenerate = () => {
   errorInfo.value = null;
   liveModelName = store.selectedModel?.displayName ?? '';
+  liveByo = isByoModelId(store.selectedModelId);
   void chat.reload();
 };
 

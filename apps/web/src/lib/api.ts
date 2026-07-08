@@ -1,4 +1,4 @@
-import type { Conversation, ConversationWithMessages, Model } from '@crisp/contracts';
+import type { ByoRunRequest, Conversation, ConversationWithMessages, Model } from '@crisp/contracts';
 
 const json = async <T>(response: Response): Promise<T> => {
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
@@ -23,6 +23,15 @@ export const deleteConversation = async (id: string): Promise<void> => {
 
 export const stopRun = async (runId: string): Promise<void> => {
   await fetch(`/api/runs/${runId}/stop`, { method: 'POST' });
+};
+
+/** Reports a finished browser-executed Run for persistence + observability. */
+export const postByoRun = async (conversationId: string, run: ByoRunRequest): Promise<void> => {
+  await fetch(`/api/conversations/${conversationId}/byo-runs`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(run),
+  }).catch(() => undefined); // the transcript lives client-side; reload refetches
 };
 
 /** Casts, changes, or (score: null) retracts the vote on a Run. */

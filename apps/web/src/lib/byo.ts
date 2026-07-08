@@ -1,0 +1,218 @@
+import { chat, type StreamChunk } from '@crisp/ai';
+import { createOllamaChat } from '@crisp/ai/ollama';
+import { fetchServerSentEvents, type ConnectConnectionAdapter } from '@crisp/ai/client';
+import type { ByoRunRequest, Message, Model } from '@crisp/contracts';
+import * as api from './api';
+
+/**
+ * BYO Ollama (ADR-0004): when Crisp is deployed, the server can't reach the
+ * user's localhost — but this page can. Models with the `byo/` prefix are
+ * discovered from and executed against the user's own Ollama daemon, straight
+ * from the browser, emitting the same AG-UI events server runs do. Finished
+ * runs are reported to the server for persistence and observability.
+ *
+ * The user opts in once: `OLLAMA_ORIGINS=<this origin>` on their daemon
+ * (plus Chrome's local-network permission prompt on HTTPS deployments).
+ */
+
+export const BYO_PREFIX = 'byo/';
+export const OLLAMA_LOCAL_URL = 'http://localhost:11434';
+
+export const isByoModelId = (id: string): boolean => id.startsWith(BYO_PREFIX);
+
+/** The one-time daemon config that allows this origin. Shown in the picker. */
+export const byoConnectCommand = (): string => `OLLAMA_ORIGINS=${window.location.origin} ollama serve`;
+
+interface OllamaTag {
+  name: string;
+}
+
+/** Browser-side discovery of the user's own Ollama. Silent on any failure. */
+export const discoverByoModels = async (): Promise<Model[]> => {
+  try {
+    const response = await fetch(`${OLLAMA_LOCAL_URL}/api/tags`, { signal: AbortSignal.timeout(1500) });
+    if (!response.ok) return [];
+    const body = (await response.json()) as { models?: OllamaTag[] };
+    return (body.models ?? []).map((tag) => ({
+      id: `${BYO_PREFIX}${tag.name}`,
+      displayName: tag.name,
+      provider: 'Ollama (yours)',
+      provenance: 'local',
+      available: true,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+// ---- the browser-side gateway ---------------------------------------------
+
+/** AG-UI stream chunk, read loosely (same stance as the server's RunEvent). */
+interface Chunk {
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Minimal reading of the UI messages the chat client hands a connection. */
+interface WireLike {
+  id?: string;
+  role?: string;
+  content?: string | Array<{ type?: string; text?: string }>;
+  parts?: Array<{ type?: string; content?: string }>;
+}
+
+const textOf = (message: WireLike): string => {
+  if (typeof message.content === 'string') return message.content;
+  if (Array.isArray(message.parts)) {
+    const fromParts = message.parts
+      .filter((part) => part.type === 'text' && typeof part.content === 'string')
+      .map((part) => part.content)
+      .join('');
+    if (fromParts.length > 0) return fromParts;
+  }
+  if (Array.isArray(message.content)) {
+    return message.content
+      .filter((part) => part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text)
+      .join('');
+  }
+  return '';
+};
+
+const toHistory = (messages: WireLike[]): ByoRunRequest['history'] =>
+  messages
+    .filter((m): m is WireLike & { role: 'user' | 'assistant' | 'system' } =>
+      m.role === 'user' || m.role === 'assistant' || m.role === 'system',
+    )
+    .map((m) => ({ role: m.role, content: textOf(m) }))
+    .filter((m) => m.content.length > 0);
+
+/** The trailing user message as a persistable Message (mirrors server wire.ts). */
+const trailingUserMessage = (messages: WireLike[]): Message | undefined => {
+  const last = messages.at(-1);
+  if (!last || last.role !== 'user') return undefined;
+  const content = textOf(last);
+  if (content.length === 0) return undefined;
+  return {
+    id: typeof last.id === 'string' && last.id.length > 0 ? last.id : crypto.randomUUID(),
+    role: 'user',
+    parts: [{ type: 'text', content }],
+    createdAt: new Date().toISOString(),
+  };
+};
+
+/**
+ * Runs one generation against the user's Ollama, in the page. Yields the
+ * same AG-UI events a server run would (ADR-0002 pays off: the transcript
+ * can't tell where events come from), then reports the finished run to the
+ * server — persistence happens *before* RUN_FINISHED is released so the
+ * sidebar refresh that follows sees the conversation.
+ */
+async function* runByoModel(model: Model, wireMessages: WireLike[], signal: AbortSignal | undefined, threadId: string): AsyncIterable<Chunk> {
+  // client-minted UUID: it becomes the LangSmith run id and Feedback anchor
+  const runId = crypto.randomUUID();
+  const history = toHistory(wireMessages);
+  const userMessage = trailingUserMessage(wireMessages);
+  const startedAt = Date.now();
+  const startedPerf = performance.now();
+  let firstTokenPerf = 0;
+  let text = '';
+  let tokenCount = 0;
+  let usage: ByoRunRequest['usage'];
+  let errorMessage: string | undefined;
+  let reported = false;
+
+  const report = async (outcome: ByoRunRequest['outcome']) => {
+    if (reported) return;
+    reported = true;
+    const streamMs = firstTokenPerf > 0 ? performance.now() - firstTokenPerf : 0;
+    await api.postByoRun(threadId, {
+      runId,
+      modelId: model.id,
+      history,
+      userMessage,
+      assistantText: text,
+      outcome,
+      stats: {
+        ttftMs: firstTokenPerf > 0 ? Math.round(firstTokenPerf - startedPerf) : 0,
+        tokensPerSec: streamMs > 0 ? Math.round((tokenCount / streamMs) * 1000) : tokenCount,
+      },
+      usage,
+      startedAt,
+      finishedAt: Date.now(),
+      ...(errorMessage ? { error: errorMessage } : {}),
+    });
+  };
+
+  const abortController = new AbortController();
+  const onAbort = () => abortController.abort();
+  signal?.addEventListener('abort', onAbort, { once: true });
+
+  try {
+    // system prompts travel separately in @crisp/ai (same as the server gateway)
+    const systemPrompts = history.filter((m) => m.role === 'system').map((m) => m.content);
+    const chatMessages = history
+      .filter((m): m is typeof m & { role: 'user' | 'assistant' } => m.role !== 'system')
+      .map((m) => ({ role: m.role, content: m.content }));
+    const stream = chat({
+      adapter: createOllamaChat(model.id.slice(BYO_PREFIX.length), OLLAMA_LOCAL_URL),
+      messages: chatMessages,
+      ...(systemPrompts.length > 0 ? { systemPrompts } : {}),
+      threadId,
+      runId,
+      abortController,
+    });
+    for await (const chunk of stream as AsyncIterable<Chunk>) {
+      if (chunk.type === 'TEXT_MESSAGE_CONTENT' && typeof chunk.delta === 'string') {
+        if (firstTokenPerf === 0) firstTokenPerf = performance.now();
+        text += chunk.delta;
+        tokenCount += 1;
+      }
+      if (chunk.type === 'RUN_FINISHED') {
+        if (chunk.usage && typeof chunk.usage === 'object') usage = chunk.usage as ByoRunRequest['usage'];
+        await report('completed');
+      }
+      if (chunk.type === 'RUN_ERROR') {
+        errorMessage = typeof chunk.message === 'string' ? chunk.message : 'The run failed.';
+        yield { ...chunk, code: 'provider_unavailable', provider: 'your Ollama' };
+        break;
+      }
+      yield chunk;
+    }
+  } catch (error) {
+    if (!signal?.aborted) {
+      errorMessage = error instanceof Error ? error.message : String(error);
+      yield {
+        type: 'RUN_ERROR',
+        runId,
+        threadId,
+        message: errorMessage,
+        code: 'provider_unavailable',
+        provider: 'your Ollama',
+        timestamp: Date.now(),
+      };
+    }
+  } finally {
+    signal?.removeEventListener('abort', onAbort);
+    // stop / error / consumer-break paths land here with the run unreported
+    void report(errorMessage ? 'failed' : signal?.aborted ? 'stopped' : 'completed');
+  }
+}
+
+/**
+ * The app's one connection: BYO models run in the page, everything else
+ * streams from the server. Selection is read per send, so switching models
+ * mid-conversation routes each Run to the right place.
+ */
+export const crispConnection = (selectedModel: () => Model | null): ConnectConnectionAdapter => {
+  const sse = fetchServerSentEvents('/api/chat');
+  return {
+    connect(messages, data, abortSignal, runContext) {
+      const model = selectedModel();
+      if (model && isByoModelId(model.id) && runContext) {
+        return runByoModel(model, messages as WireLike[], abortSignal, runContext.threadId) as AsyncIterable<StreamChunk>;
+      }
+      return sse.connect(messages, data, abortSignal, runContext);
+    },
+  };
+};

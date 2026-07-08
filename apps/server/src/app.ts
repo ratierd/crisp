@@ -1,8 +1,8 @@
 import { toServerSentEventsResponse } from '@crisp/ai';
 import { Hono } from 'hono';
-import { chatRequestSchema, feedbackRequestSchema } from '@crisp/contracts';
+import { byoRunRequestSchema, chatRequestSchema, feedbackRequestSchema } from '@crisp/contracts';
 import type { StreamChunk } from '@crisp/ai';
-import type { ConversationRepository, FeedbackSink, RunStreamStore } from '@crisp/domain';
+import type { ConversationRepository, FeedbackSink, RunMirror, RunStreamStore } from '@crisp/domain';
 import { ConversationService, RunService, TitleService } from '@crisp/domain';
 import type { ModelGateway } from '@crisp/domain';
 import type { Env } from './infra/env';
@@ -18,6 +18,8 @@ export interface AppDeps {
   runStreams: RunStreamStore;
   /** Optional observability mirror for Feedback (ADR-0005). */
   feedback?: FeedbackSink;
+  /** Optional observability mirror for browser-executed Runs (ADR-0004). */
+  runMirror?: RunMirror;
 }
 
 export const createApp = (deps: AppDeps) => {
@@ -83,6 +85,65 @@ export const createApp = (deps: AppDeps) => {
     // itself is detached, so a dropped connection doesn't kill generation.
     const replay = deps.runStreams.replay(runId, c.req.raw.signal) as AsyncIterable<StreamChunk>;
     return toServerSentEventsResponse(replay, { headers: { 'x-run-id': runId } });
+  });
+
+  // A BYO-Ollama Run executed in the browser (ADR-0004): persist the
+  // exchange exactly as RunService would, then mirror it to observability.
+  app.post('/api/conversations/:id/byo-runs', async (c) => {
+    const parsed = byoRunRequestSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'Malformed BYO run report.' }, 400);
+    const conversationId = c.req.param('id');
+    const report = parsed.data;
+
+    let userMessage = report.userMessage;
+    const existing = await conversationService.get(conversationId);
+    if (!existing) {
+      const firstUserText = report.history.find((m) => m.role === 'user')?.content ?? '';
+      await conversationService.create(firstUserText, conversationId);
+    } else if (userMessage && existing.messages.some((m) => m.id === userMessage!.id)) {
+      // regenerate resends history ending at an already-persisted user message
+      await deps.conversations.deleteMessagesAfter(conversationId, userMessage.id);
+      userMessage = undefined;
+    }
+    if (userMessage) await deps.conversations.appendMessage(conversationId, userMessage);
+
+    // like RunService: keep the assistant Message when text arrived, even stopped
+    if (report.assistantText.length > 0 && report.outcome !== 'failed') {
+      await deps.conversations.appendMessage(conversationId, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        parts: [{ type: 'text', content: report.assistantText }],
+        createdAt: new Date(report.finishedAt).toISOString(),
+        modelId: report.modelId,
+        runId: report.runId,
+        stats: report.stats,
+        ...(report.outcome === 'stopped' ? { stoppedEarly: true } : {}),
+      });
+    }
+
+    if (deps.runMirror) {
+      const modelName = report.modelId.slice('byo/'.length);
+      void deps.runMirror.record({
+        runId: report.runId,
+        conversationId,
+        model: {
+          id: report.modelId,
+          displayName: modelName,
+          provider: 'Ollama (yours)',
+          provenance: 'local',
+          available: true,
+        },
+        messages: report.history,
+        assistantText: report.assistantText,
+        outcome: report.outcome,
+        usage: report.usage,
+        startedAt: report.startedAt,
+        finishedAt: report.finishedAt,
+        error: report.error,
+      });
+    }
+
+    return c.json({ ok: true });
   });
 
   app.get('/api/runs/:runId/events', (c) => {

@@ -1,15 +1,30 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { byoConnectCommand } from '../lib/byo';
 import { useAppStore } from '../stores/app';
 import ProvenanceBadge from './ProvenanceBadge.vue';
 
 const store = useAppStore();
 const open = ref(false);
 
+const toggle = () => {
+  open.value = !open.value;
+  // the user may have just configured OLLAMA_ORIGINS — re-check on open
+  if (open.value && !store.byoConnected) void store.loadModels();
+};
+
 const pick = (id: string, available: boolean) => {
   if (!available) return;
   store.selectModel(id);
   open.value = false;
+};
+
+const command = byoConnectCommand();
+const copied = ref(false);
+const copyCommand = async () => {
+  await navigator.clipboard.writeText(command).catch(() => undefined);
+  copied.value = true;
+  setTimeout(() => (copied.value = false), 1600);
 };
 
 const onGlobalClick = () => (open.value = false);
@@ -29,7 +44,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="picker" @click.stop>
-    <button class="trigger" type="button" @click="open = !open">
+    <button class="trigger" type="button" @click="toggle">
       <span class="dot" />
       <span class="name">{{ store.selectedModel?.displayName ?? 'Pick a model' }}</span>
       <ProvenanceBadge v-if="store.selectedModel" :provenance="store.selectedModel.provenance" />
@@ -53,6 +68,17 @@ onBeforeUnmount(() => {
         <div v-if="!model.available && model.unavailableReason" class="hint">
           {{ model.unavailableReason }}
         </div>
+      </div>
+
+      <div v-if="!store.byoConnected" class="byo">
+        <div class="section">YOUR OLLAMA · NOT CONNECTED</div>
+        <div class="byo-hint">
+          Chat with models running on this machine — allow this origin on your daemon, then reopen:
+        </div>
+        <button class="byo-cmd" type="button" :title="copied ? 'Copied' : 'Copy command'" @click="copyCommand">
+          <code>{{ command }}</code>
+          <span class="copy">{{ copied ? 'copied ✓' : 'copy' }}</span>
+        </button>
       </div>
     </div>
   </div>
@@ -140,5 +166,46 @@ onBeforeUnmount(() => {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-3);
+}
+.byo {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-faint);
+}
+.byo-hint {
+  padding: 0 10px 6px;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.byo-cmd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 12px);
+  margin: 0 6px 4px;
+  padding: 6px 8px;
+  background: var(--code-bg);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  text-align: left;
+}
+.byo-cmd code {
+  flex: 1;
+  font-family: var(--font-meta);
+  font-size: 10px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.byo-cmd .copy {
+  font-family: var(--font-meta);
+  font-size: 9.5px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.byo-cmd:hover {
+  border-color: var(--border);
 }
 </style>

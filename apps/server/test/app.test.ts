@@ -250,6 +250,104 @@ describe('PUT /api/runs/:runId/feedback', () => {
   });
 });
 
+describe('POST /api/conversations/:id/byo-runs', () => {
+  const report = (overrides: Record<string, unknown> = {}) => ({
+    runId: 'b3b0c8a4-8a34-4b5e-9d1c-2f6a7e5d4c3b',
+    modelId: 'byo/llama3.2:1b',
+    history: [{ role: 'user', content: 'hi from the browser' }],
+    userMessage: {
+      id: 'u-byo-1',
+      role: 'user',
+      parts: [{ type: 'text', content: 'hi from the browser' }],
+      createdAt: new Date().toISOString(),
+    },
+    assistantText: 'hello from your own machine',
+    outcome: 'completed',
+    stats: { ttftMs: 120, tokensPerSec: 9 },
+    usage: { promptTokens: 6, completionTokens: 7, totalTokens: 13 },
+    startedAt: Date.now() - 2000,
+    finishedAt: Date.now(),
+    ...overrides,
+  });
+
+  it('creates the conversation, persists the exchange, and mirrors the run', async () => {
+    const mirrored: unknown[] = [];
+    const env = loadEnv({});
+    const conversations = new FakeConversationRepository();
+    const { app } = createApp({
+      env,
+      registry: new ModelRegistry(env, ollamaDown),
+      gateway: new AiModelGateway(env, { delayMs: 0 }),
+      conversations,
+      runStreams: new FakeRunStreamStore(),
+      runMirror: { record: async (run) => void mirrored.push(run) },
+    });
+
+    const response = await app.request('/api/conversations/conv-byo/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report()),
+    });
+    expect(response.status).toBe(200);
+
+    const conversation = await conversations.get('conv-byo');
+    expect(conversation).not.toBeNull();
+    expect(conversation!.title.length).toBeGreaterThan(0);
+    const [user, assistant] = conversation!.messages;
+    expect(user!.role).toBe('user');
+    expect(assistant!.role).toBe('assistant');
+    expect(assistant!.runId).toBe('b3b0c8a4-8a34-4b5e-9d1c-2f6a7e5d4c3b');
+    expect(assistant!.modelId).toBe('byo/llama3.2:1b');
+    expect(assistant!.parts[0]!.content).toBe('hello from your own machine');
+
+    await waitFor(() => mirrored.length === 1);
+    const run = mirrored[0] as { model: { provenance: string }; usage?: unknown; outcome: string };
+    expect(run.model.provenance).toBe('local');
+    expect(run.outcome).toBe('completed');
+    expect(run.usage).toEqual({ promptTokens: 6, completionTokens: 7, totalTokens: 13 });
+
+    // feedback works on BYO runs like any other
+    const vote = await app.request('/api/runs/b3b0c8a4-8a34-4b5e-9d1c-2f6a7e5d4c3b/feedback', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ score: 'up' }),
+    });
+    expect(vote.status).toBe(200);
+    expect((await conversations.get('conv-byo'))!.messages[1]!.feedback).toEqual({ score: 'up' });
+  });
+
+  it('dedupes the user message on regenerate and drops superseded answers', async () => {
+    const { app, conversations } = makeApp();
+    await app.request('/api/conversations/conv-byo2/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report({ runId: crypto.randomUUID() })),
+    });
+    // regenerate: same user message id, new run
+    await app.request('/api/conversations/conv-byo2/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report({ runId: crypto.randomUUID(), assistantText: 'second answer' })),
+    });
+    const messages = conversations.messages.get('conv-byo2')!;
+    expect(messages).toHaveLength(2);
+    expect(messages[1]!.parts[0]!.content).toBe('second answer');
+  });
+
+  it('persists nothing but still accepts a failed run report', async () => {
+    const { app, conversations } = makeApp();
+    const response = await app.request('/api/conversations/conv-byo3/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(
+        report({ runId: crypto.randomUUID(), assistantText: '', outcome: 'failed', error: 'CORS blocked', userMessage: undefined }),
+      ),
+    });
+    expect(response.status).toBe(200);
+    expect(conversations.messages.get('conv-byo3') ?? []).toHaveLength(0);
+  });
+});
+
 describe('POST /api/runs/:runId/stop', () => {
   it('aborts a live run and keeps the partial message', async () => {
     const env = loadEnv({});

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import type { Conversation, Model } from '@crisp/contracts';
 import * as api from '../lib/api';
+import { discoverByoModels } from '../lib/byo';
 
 type Theme = 'light' | 'dark';
 
@@ -47,6 +48,8 @@ export const useAppStore = defineStore('app', {
       /** Ids minted client-side — they don't exist server-side until the first message. */
       freshConversationIds: new Set<string>(initial.fresh ? [initial.id] : []),
       selectedModelId: localStorage.getItem(MODEL_KEY) ?? 'demo/demo',
+      /** True once the browser has found the user's own Ollama (ADR-0004). */
+      byoConnected: false,
       theme: (localStorage.getItem(THEME_KEY) as Theme | null) ?? null,
       sidebarOpen: true,
       sidebarWidth: initialSidebarWidth(),
@@ -68,7 +71,18 @@ export const useAppStore = defineStore('app', {
 
   actions: {
     async loadModels() {
-      this.models = await api.getModels();
+      // server registry + the browser's own view of the user's Ollama
+      const [server, byo] = await Promise.all([api.getModels(), discoverByoModels()]);
+      this.byoConnected = byo.length > 0;
+      // in local dev the server sees the same daemon — hide byo duplicates
+      const serverOllama = new Set(
+        server.filter((m) => m.available && m.id.startsWith('ollama/')).map((m) => m.id.slice('ollama/'.length)),
+      );
+      const byoUnique = byo.filter((m) => !serverOllama.has(m.displayName));
+      // the user's daemon answering makes the server's "Ollama isn't running" row noise
+      const base =
+        byoUnique.length > 0 ? server.filter((m) => m.available || !m.id.startsWith('ollama/')) : server;
+      this.models = [...base, ...byoUnique];
       const selected = this.models.find((m) => m.id === this.selectedModelId);
       if (!selected?.available) {
         this.selectedModelId = this.models.find((m) => m.available)?.id ?? 'demo/demo';

@@ -57,6 +57,28 @@ export interface FeedbackSink {
   record(runId: string, feedback: Feedback | null): Promise<void>;
 }
 
+/** A finished Run executed outside the server (BYO), as the client reports it. */
+export interface MirroredRun {
+  runId: string;
+  conversationId: string;
+  model: Model;
+  messages: GatewayMessage[];
+  assistantText: string;
+  outcome: 'completed' | 'stopped' | 'failed';
+  usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  startedAt: number;
+  finishedAt: number;
+  error?: string;
+}
+
+/**
+ * The port for mirroring externally-executed Runs to observability
+ * (ADR-0004/0004). Best-effort, like FeedbackSink.
+ */
+export interface RunMirror {
+  record(run: MirroredRun): Promise<void>;
+}
+
 /**
  * The port for buffering and fanning out the live event stream of a Run,
  * enabling mid-stream resume.
