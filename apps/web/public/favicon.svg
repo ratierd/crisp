@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Crisp mark: serif C on the accent blue, legible at 16px -->
+  <rect width="32" height="32" rx="7" fill="oklch(55% 0.19 258)" />
+  <text
+    x="16"
+    y="23.5"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="21"
+    font-weight="600"
+    fill="oklch(99% 0 0)"
+  >C</text>
+</svg>

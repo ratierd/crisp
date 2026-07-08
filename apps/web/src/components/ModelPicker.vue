@@ -1,0 +1,144 @@
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { useAppStore } from '../stores/app';
+import ProvenanceBadge from './ProvenanceBadge.vue';
+
+const store = useAppStore();
+const open = ref(false);
+
+const pick = (id: string, available: boolean) => {
+  if (!available) return;
+  store.selectModel(id);
+  open.value = false;
+};
+
+const onGlobalClick = () => (open.value = false);
+const onKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') open.value = false;
+};
+
+onMounted(() => {
+  document.addEventListener('click', onGlobalClick);
+  document.addEventListener('keydown', onKeydown);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onGlobalClick);
+  document.removeEventListener('keydown', onKeydown);
+});
+</script>
+
+<template>
+  <div class="picker" @click.stop>
+    <button class="trigger" type="button" @click="open = !open">
+      <span class="dot" />
+      <span class="name">{{ store.selectedModel?.displayName ?? 'Pick a model' }}</span>
+      <ProvenanceBadge v-if="store.selectedModel" :provenance="store.selectedModel.provenance" />
+      <span class="chevron">▾</span>
+    </button>
+
+    <div v-if="open" class="model-popover">
+      <div class="section">MODEL</div>
+      <div
+        v-for="model in store.models"
+        :key="model.id"
+        class="row"
+        :class="{ disabled: !model.available }"
+        @click="pick(model.id, model.available)"
+      >
+        <div class="row-line">
+          <span class="row-name">{{ model.displayName }}</span>
+          <ProvenanceBadge :provenance="model.provenance" />
+          <span v-if="model.id === store.selectedModelId" class="check">✓</span>
+        </div>
+        <div v-if="!model.available && model.unavailableReason" class="hint">
+          {{ model.unavailableReason }}
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.picker {
+  position: static;
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  padding: 4px 7px;
+  border-radius: var(--radius-s);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+}
+.trigger:hover {
+  background: var(--bg-inset);
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.chevron {
+  font-size: 8.5px;
+  color: var(--text-3);
+}
+.model-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: min(360px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  z-index: 20;
+}
+.section {
+  padding: 6px 10px 4px;
+  font-family: var(--font-meta);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+.row {
+  padding: 9px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.row:hover {
+  background: var(--bg-inset);
+}
+.row.disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-name {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.check {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 12px;
+}
+.hint {
+  margin-top: 3px;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+</style>
