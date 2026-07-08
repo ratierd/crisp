@@ -15,12 +15,18 @@ docker compose up --build
 ```
 
 That's the whole setup. Redis and the app start together; the Demo model needs
-no keys. To light up real providers, pass keys through the environment
-(compose forwards them):
+no keys. To light up real providers, run the interactive wizard (needs
+[Bun](https://bun.sh)) — it collects provider and LangSmith keys into `.env`
+(compose reads it automatically), validates them live, and helps you pull
+your first local model:
 
 ```sh
-ANTHROPIC_API_KEY=sk-... OPENAI_API_KEY=sk-... docker compose up --build
+bun install && bun setup
 ```
+
+No Bun? Copy `.env.example` to `.env` and fill it by hand — everything in it
+is optional. Inline env vars work too:
+`ANTHROPIC_API_KEY=sk-... docker compose up --build`.
 
 Local models are **BYO Ollama** — always discovered and run by the *browser*,
 never the server, exactly as they would be against a deployed Crisp. On
@@ -44,12 +50,13 @@ To collect traces, cost, and feedback analytics in LangSmith, set
 ```sh
 bun install
 docker compose up redis -d
-cp .env.example .env        # optional: add provider keys
+bun setup                   # optional: keys, LangSmith, first local model
 bun dev                     # server :3000 + vite :5173
 ```
 
 | command | what it does |
 | --- | --- |
+| `bun setup` | interactive wizard: keys → `.env` (idempotent, secrets masked), pull a local model |
 | `bun dev` | dev servers (Hono on :3000, Vite on :5173) |
 | `bun test` | unit + integration tests (Vitest) |
 | `bun typecheck` | strict TS across all packages |
@@ -60,7 +67,8 @@ bun dev                     # server :3000 + vite :5173
 
 ### Environment variables
 
-Everything is optional (see `.env.example`):
+Everything is optional (`bun setup` fills these interactively; see
+`.env.example` for the manual route):
 
 | var | default | effect |
 | --- | --- | --- |

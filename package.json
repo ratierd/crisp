@@ -9,10 +9,13 @@
     "dev": "nx run-many -t dev --parallel 2 --output-style stream",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
-    "typecheck": "nx run-many -t typecheck",
-    "e2e": "nx run @crisp/web:e2e"
+    "typecheck": "nx run-many -t typecheck && tsc -p scripts/tsconfig.json",
+    "e2e": "nx run @crisp/web:e2e",
+    "setup": "bun scripts/setup.ts"
   },
   "devDependencies": {
+    "@clack/prompts": "1.7.0",
+    "@types/bun": "1.3.14",
     "nx": "23.0.1",
     "typescript": "6.0.3"
   }
