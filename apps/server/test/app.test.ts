@@ -6,11 +6,9 @@ import { loadEnv } from '../src/infra/env';
 import { ModelRegistry } from '../src/infra/model-registry';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
-const ollamaDown = (() => Promise.reject(new Error('ECONNREFUSED'))) as unknown as typeof fetch;
-
 const makeApp = (envOverrides: Record<string, string | undefined> = {}) => {
   const env = loadEnv({ ...envOverrides });
-  const registry = new ModelRegistry(env, ollamaDown);
+  const registry = new ModelRegistry(env);
   const gateway = new AiModelGateway(env, { delayMs: 0 });
   const conversations = new FakeConversationRepository();
   const runStreams = new FakeRunStreamStore();
@@ -63,10 +61,8 @@ describe('GET /api/models', () => {
     expect(openai.every((m) => m.available === false)).toBe(true);
     expect(openai[0]!.unavailableReason).toContain('OPENAI_API_KEY');
 
-    const ollama = models.filter((m) => m.provider === 'Ollama');
-    expect(ollama).toHaveLength(1);
-    expect(ollama[0]!.available).toBe(false);
-    expect(ollama[0]!.unavailableReason).toContain("isn't running");
+    // local models are BYO-only (ADR-0004) — the server never lists Ollama
+    expect(models.some((m) => String(m.id).startsWith('ollama/'))).toBe(false);
   });
 });
 
@@ -218,7 +214,7 @@ describe('PUT /api/runs/:runId/feedback', () => {
     const conversations = new FakeConversationRepository();
     const { app } = createApp({
       env,
-      registry: new ModelRegistry(env, ollamaDown),
+      registry: new ModelRegistry(env),
       gateway: new AiModelGateway(env, { delayMs: 0 }),
       conversations,
       runStreams: new FakeRunStreamStore(),
@@ -276,7 +272,7 @@ describe('POST /api/conversations/:id/byo-runs', () => {
     const conversations = new FakeConversationRepository();
     const { app } = createApp({
       env,
-      registry: new ModelRegistry(env, ollamaDown),
+      registry: new ModelRegistry(env),
       gateway: new AiModelGateway(env, { delayMs: 0 }),
       conversations,
       runStreams: new FakeRunStreamStore(),
@@ -351,7 +347,7 @@ describe('POST /api/conversations/:id/byo-runs', () => {
 describe('POST /api/runs/:runId/stop', () => {
   it('aborts a live run and keeps the partial message', async () => {
     const env = loadEnv({});
-    const registry = new ModelRegistry(env, ollamaDown);
+    const registry = new ModelRegistry(env);
     const gateway = new AiModelGateway(env, { delayMs: 15 });
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();

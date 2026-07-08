@@ -5,8 +5,6 @@ import { loadEnv } from '../src/infra/env';
 import { ModelRegistry } from '../src/infra/model-registry';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
-const ollamaDown = (() => Promise.reject(new Error('ECONNREFUSED'))) as unknown as typeof fetch;
-
 const waitFor = async (predicate: () => boolean, timeoutMs = 2000) => {
   const start = Date.now();
   while (!predicate()) {
@@ -18,7 +16,7 @@ const waitFor = async (predicate: () => boolean, timeoutMs = 2000) => {
 describe('regenerate', () => {
   it('replaces the previous assistant message instead of appending a second one', async () => {
     const env = loadEnv({});
-    const registry = new ModelRegistry(env, ollamaDown);
+    const registry = new ModelRegistry(env);
     const gateway = new AiModelGateway(env, { delayMs: 0 });
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();

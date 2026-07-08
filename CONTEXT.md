@@ -23,7 +23,7 @@ The user's thumbs-up/down verdict on a Run, given from the assistant Message it 
 _Avoid_: Rating, vote, reaction
 
 **Provenance**:
-Where a Model executes: `local` (the user's own machine — their Ollama, reached directly from the browser when Crisp is deployed) or `remote` (a third-party API, e.g. Anthropic, OpenAI). A property of the Model, invisible to the domain logic.
+Where a Model executes: `local` (the user's own machine — their Ollama, always reached directly from the browser) or `remote` (a third-party API, e.g. Anthropic, OpenAI). A property of the Model, invisible to the domain logic.
 _Avoid_: Provider type, origin, self-hosted
 
 **ModelGateway**:

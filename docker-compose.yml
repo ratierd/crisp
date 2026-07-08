@@ -6,15 +6,11 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       DB_PATH: /data/crisp.sqlite
-      # Reaches an Ollama daemon on the docker host, if one is running.
-      OLLAMA_BASE_URL: http://host.docker.internal:11434
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-crisp}
       LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     volumes:
       - crisp-data:/data
     depends_on:

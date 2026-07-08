@@ -19,24 +19,17 @@ const OPENAI_CATALOG = [
   { name: 'gpt-5-mini', displayName: 'GPT-5 mini' },
 ] as const;
 
-interface OllamaTag {
-  name: string;
-}
-
 /**
- * The Model registry: remote entries gated by env-key presence, local
- * entries discovered from the Ollama daemon. `/api/models` doubles as the
+ * The Model registry: remote entries gated by env-key presence. Local models
+ * are the user's own Ollama, discovered and executed by the *browser*
+ * (ADR-0004) — the server never lists them. `/api/models` doubles as the
  * health check — unavailable Models carry the hint the picker shows.
  */
 export class ModelRegistry {
-  constructor(
-    private readonly env: Env,
-    private readonly fetchFn: typeof fetch = fetch,
-  ) {}
+  constructor(private readonly env: Env) {}
 
   async listModels(): Promise<Model[]> {
-    const [ollama, remote] = await Promise.all([this.ollamaModels(), this.remoteModels()]);
-    return [DEMO_MODEL, ...ollama, ...remote];
+    return [DEMO_MODEL, ...this.remoteModels()];
   }
 
   /** Resolves a picker id to a Model; unavailable and unknown ids return null. */
@@ -72,44 +65,5 @@ export class ModelRegistry {
       }),
     );
     return [...anthropic, ...openai];
-  }
-
-  private async ollamaModels(): Promise<Model[]> {
-    const down: Model = {
-      id: 'ollama/unavailable',
-      displayName: 'Ollama',
-      provider: 'Ollama',
-      provenance: 'local',
-      available: false,
-      unavailableReason: "Ollama isn't running — start it, then reopen this menu.",
-    };
-    try {
-      const response = await this.fetchFn(`${this.env.ollamaBaseUrl}/api/tags`, {
-        signal: AbortSignal.timeout(1500),
-      });
-      if (!response.ok) return [down];
-      const body = (await response.json()) as { models?: OllamaTag[] };
-      const tags = body.models ?? [];
-      if (tags.length === 0) {
-        return [
-          {
-            ...down,
-            id: 'ollama/none',
-            unavailableReason: 'No local models installed — try `ollama pull llama3.2`.',
-          },
-        ];
-      }
-      return tags.map(
-        (tag): Model => ({
-          id: `ollama/${tag.name}`,
-          displayName: tag.name,
-          provider: 'Ollama',
-          provenance: 'local',
-          available: true,
-        }),
-      );
-    } catch {
-      return [down];
-    }
   }
 }

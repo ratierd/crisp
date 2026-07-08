@@ -22,14 +22,14 @@ no keys. To light up real providers, pass keys through the environment
 ANTHROPIC_API_KEY=sk-... OPENAI_API_KEY=sk-... docker compose up --build
 ```
 
-A local Ollama daemon on the host is picked up automatically
-(`host.docker.internal:11434`); every installed model appears in the picker.
-
-If the *server* can't reach any Ollama (typical when Crisp is deployed), the
-picker offers **BYO Ollama**: run your daemon with this origin allowed —
+Local models are **BYO Ollama** — always discovered and run by the *browser*,
+never the server, exactly as they would be against a deployed Crisp. On
+localhost a running daemon just works (Ollama allows localhost origins by
+default); every installed model appears in the picker. Against a deployed
+instance, allow that origin on your daemon —
 
 ```sh
-OLLAMA_ORIGINS=http://localhost:3000 ollama serve   # the picker shows your exact origin
+OLLAMA_ORIGINS=https://crisp.example.com ollama serve   # the picker shows your exact origin
 ```
 
 — and your local models appear and run straight from the browser. On HTTPS
@@ -66,7 +66,6 @@ Everything is optional (see `.env.example`):
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | — | enables Claude models in the picker |
 | `OPENAI_API_KEY` | — | enables GPT models in the picker |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | where the *server* discovers local models |
 | `LANGSMITH_API_KEY` | — | traces every Run to LangSmith; feedback lands on traces |
 | `LANGSMITH_PROJECT` | `crisp` | LangSmith project name |
 | `LANGSMITH_ENDPOINT` | US host | set `https://eu.api.smith.langchain.com` for EU accounts |
@@ -80,7 +79,8 @@ Everything is optional (see `.env.example`):
   code blocks rendered incrementally — only the growing tail block re-renders.
 - **Model picker with health gating**: `GET /api/models` doubles as a health
   check; a dead provider's models stay visible but disabled, with a hint
-  explaining why (missing key, Ollama not running).
+  explaining why (missing key), and the picker shows the one-line command
+  that connects your own Ollama.
 - **Mid-stream resume**: refresh the page while the model is answering and the
   stream reattaches and keeps writing. Runs execute detached from the HTTP
   request; a dropped connection doesn't kill generation.
@@ -88,11 +88,11 @@ Everything is optional (see `.env.example`):
   (`provider_unavailable` / `auth_failed` / `rate_limited` / `aborted` / `unknown`).
 - **Conversations**: SQLite-persisted history, auto-titled after the first
   exchange by the model that answered.
-- **BYO Ollama**: when the server can't reach an Ollama daemon (e.g. the app
-  is deployed), the *browser* discovers and runs the user's own local models
-  directly — the model list, streaming, stop, regenerate, and feedback all
-  work identically. The picker shows the one-line `OLLAMA_ORIGINS` command
-  that opts your daemon in.
+- **BYO Ollama**: local models are always the *browser's* job — it discovers
+  and runs the user's own daemon directly, in dev and deployed alike; the
+  model list, streaming, stop, regenerate, and feedback all work identically
+  to server runs. The picker shows the one-line `OLLAMA_ORIGINS` command
+  that opts your daemon in (localhost origins need no config).
 - **Observability (LangSmith)**: set `LANGSMITH_API_KEY` and every Run —
   remote, local, demo, stopped, failed — becomes a trace with token usage and
   cost; conversations group as Threads; thumbs up/down (with an optional
@@ -153,10 +153,12 @@ Recorded as they were made, in [docs/adr/](docs/adr/) and
   resumability a first-class, multi-instance-ready concern rather than a demo
   trick. The cost — a hard dependency — is mitigated by the one-command compose
   setup.
-- **Local models stay the user's own when deployed** (ADR-0004). A deployed
-  server can never reach a visitor's `localhost:11434` — but the page can. BYO
-  models execute through a client-side gateway emitting the same AG-UI events,
-  and the finished run is reported to the server for persistence and tracing.
+- **Local models stay the user's own** (ADR-0004). A deployed server can
+  never reach a visitor's `localhost:11434` — but the page can. All local
+  models execute through a client-side gateway emitting the same AG-UI
+  events, and the finished run is reported to the server for persistence and
+  tracing. There is deliberately no server-side Ollama path: it would only
+  ever work in dev, making dev exercise a code path production never would.
   Accepted degradation: BYO runs can't mid-stream resume after a reload.
 - **LangSmith over first-party analytics** (ADR-0005). Usage, cost, failures,
   and user feedback live in LangSmith rather than a home-built dashboard —

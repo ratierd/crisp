@@ -1,6 +1,5 @@
 import { chat } from '@crisp/ai';
 import { createAnthropicChat } from '@crisp/ai/anthropic';
-import { createOllamaChat } from '@crisp/ai/ollama';
 import { createOpenaiChat } from '@crisp/ai/openai';
 import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/domain';
 import { classifyProviderError } from './classify-error';
@@ -78,8 +77,6 @@ export class AiModelGateway implements ModelGateway {
       case 'openai':
         if (!this.env.openaiApiKey) throw new Error('OPENAI_API_KEY is missing from the environment.');
         return createOpenaiChat(modelName as OpenaiModel, this.env.openaiApiKey);
-      case 'ollama':
-        return createOllamaChat(modelName, this.env.ollamaBaseUrl);
       default:
         throw new Error(`Unknown provider "${providerId}".`);
     }

@@ -71,18 +71,10 @@ export const useAppStore = defineStore('app', {
 
   actions: {
     async loadModels() {
-      // server registry + the browser's own view of the user's Ollama
+      // server registry (demo + remote) + the browser's own view of the user's Ollama
       const [server, byo] = await Promise.all([api.getModels(), discoverByoModels()]);
       this.byoConnected = byo.length > 0;
-      // in local dev the server sees the same daemon — hide byo duplicates
-      const serverOllama = new Set(
-        server.filter((m) => m.available && m.id.startsWith('ollama/')).map((m) => m.id.slice('ollama/'.length)),
-      );
-      const byoUnique = byo.filter((m) => !serverOllama.has(m.displayName));
-      // the user's daemon answering makes the server's "Ollama isn't running" row noise
-      const base =
-        byoUnique.length > 0 ? server.filter((m) => m.available || !m.id.startsWith('ollama/')) : server;
-      this.models = [...base, ...byoUnique];
+      this.models = [...server, ...byo];
       const selected = this.models.find((m) => m.id === this.selectedModelId);
       if (!selected?.available) {
         this.selectedModelId = this.models.find((m) => m.available)?.id ?? 'demo/demo';

@@ -5,14 +5,17 @@ import type { ByoRunRequest, Message, Model } from '@crisp/contracts';
 import * as api from './api';
 
 /**
- * BYO Ollama (ADR-0004): when Crisp is deployed, the server can't reach the
- * user's localhost — but this page can. Models with the `byo/` prefix are
+ * BYO Ollama (ADR-0004): local models are always the browser's job — a
+ * deployed server can never reach the user's localhost, so there is no
+ * server-side Ollama path at all. Models with the `byo/` prefix are
  * discovered from and executed against the user's own Ollama daemon, straight
  * from the browser, emitting the same AG-UI events server runs do. Finished
  * runs are reported to the server for persistence and observability.
  *
  * The user opts in once: `OLLAMA_ORIGINS=<this origin>` on their daemon
  * (plus Chrome's local-network permission prompt on HTTPS deployments).
+ * Localhost origins are covered by Ollama's defaults, so in local dev the
+ * daemon needs no config.
  */
 
 export const BYO_PREFIX = 'byo/';
