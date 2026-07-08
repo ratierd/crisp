@@ -1,0 +1,19 @@
+{
+  "name": "crisp",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "dev": "nx run-many -t dev --parallel 2 --output-style stream",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "typecheck": "nx run-many -t typecheck",
+    "e2e": "nx run @crisp/web:e2e"
+  },
+  "devDependencies": {
+    "nx": "23.0.1",
+    "typescript": "6.0.3"
+  }
+}
