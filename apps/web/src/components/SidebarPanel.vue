@@ -193,7 +193,7 @@ const startResize = (event: PointerEvent) => {
 }
 .list {
   flex: 1;
-  padding: 2px 10px 14px;
+  padding: 2px 2px 14px;
   display: flex;
   flex-direction: column;
   gap: 2px;
