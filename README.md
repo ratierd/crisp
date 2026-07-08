@@ -5,6 +5,10 @@ streaming LLM responses over the [AG-UI protocol](https://docs.ag-ui.com/) —
 from remote providers (Anthropic, OpenAI, OpenRouter) and local ones (Ollama),
 plus a zero-key **Demo** model so the app works the moment it starts.
 
+**Hosted**: <https://crisp-production-0b9e.up.railway.app> — the Demo model
+works instantly, paste your own provider key in the picker for real models
+(BYOK), or connect [your own Ollama](docs/byo-ollama.md).
+
 ![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/prototype.html)
 
 ## Run it
@@ -198,10 +202,14 @@ Other tradeoffs, honestly:
 - **The error taxonomy is pattern-matched** from provider messages/codes.
   Providers don't agree on error shapes; the patterns cover the common cases
   and everything else degrades to a working `unknown` card.
-- **No hosted URL yet.** `docker compose up` is the deployment story today.
-  BYO Ollama exists precisely so a hosted Crisp wouldn't fake its local-model
-  support: deploy the container (e.g. Railway: app + Redis + a volume for
-  SQLite), and visitors connect their *own* Ollama with one env var.
+- **Hosted on Railway, infrastructure as code.** The whole topology — app
+  container (root Dockerfile), Redis, a volume for SQLite — is declared in
+  [`.railway/railway.ts`](.railway/railway.ts): `railway config plan` diffs
+  it against the live project (drift gate for CI), `railway config apply`
+  converges, `railway up --service crisp` ships code. Secrets stay on
+  Railway (`preserve()`), never in source. Visitors get real models via
+  BYOK and their *own* Ollama via BYO — the hosted instance needs no
+  provider keys at all.
 - **Shiki's dual themes** (`min-light`/`min-dark`) ride the same
   `light-dark()` mechanism as the app tokens, rather than being remapped
   to the exact brand code palette — one mechanism, close-enough colors.
