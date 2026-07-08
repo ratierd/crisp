@@ -1,0 +1,82 @@
+/* Crisp — design tokens (quiet editorial × Crisp/Hugo brand)
+ * Single source of truth for both color schemes via light-dark().
+ * Neutrals: cool space-navy hue (~262–265), chroma rises slightly in dark mode
+ * (Hugo's deep-navy ground); whites stay near-neutral cool.
+ * Accent: Crisp brand blue, OKLCH hue 258 — the only chromatic voice.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- neutral ramp ---------------------------------------------- */
+  --bg:           light-dark(oklch(97.7% 0.003 260), oklch(17.5% 0.015 265)); /* page */
+  --bg-inset:     light-dark(oklch(94.9% 0.005 260), oklch(21.5% 0.018 265)); /* sidebar, user msg */
+  --surface:      light-dark(oklch(99.5% 0.002 260), oklch(23.5% 0.02  265)); /* cards, popovers, composer */
+  --border:       light-dark(oklch(89%   0.006 260), oklch(31.5% 0.022 265));
+  --border-faint: light-dark(oklch(92.8% 0.004 260), oklch(26%   0.018 265));
+  --text:         light-dark(oklch(22%   0.015 265), oklch(91%   0.008 260)); /* prose */
+  --text-2:       light-dark(oklch(44%   0.02  262), oklch(70.5% 0.015 262)); /* secondary UI */
+  --text-3:       light-dark(oklch(57%   0.018 262), oklch(55.5% 0.015 262)); /* footnote metadata */
+
+  /* ---- accent: Crisp blue (hue 258) -------------------------------- */
+  --accent:        light-dark(oklch(55% 0.19 258), oklch(72% 0.14 258));
+  --accent-ink:    light-dark(oklch(99% 0 0),      oklch(18% 0.03 258)); /* text on accent */
+  --accent-subtle: light-dark(oklch(93.5% 0.04 258), oklch(30% 0.07 258)); /* hover fills, selection */
+  /* brand alternates (Hugo pricing cards): orange hue 60, pink hue 350,
+     both at chroma 0.16 light / 0.13 dark if ever needed for a second voice. */
+
+  /* ---- code (Shiki dual-theme should map to these) ----------------- */
+  --code-bg:  light-dark(oklch(95.7% 0.004 260), oklch(20% 0.016 265));
+  --code-kw:  light-dark(oklch(46% 0.13 300), oklch(75% 0.11 300));
+  --code-fn:  light-dark(oklch(47% 0.11 55),  oklch(76% 0.1  55));
+  --code-num: light-dark(oklch(47% 0.13 258), oklch(74% 0.11 258));
+  --code-str: light-dark(oklch(45% 0.11 150), oklch(74% 0.1  150));
+  --code-com: light-dark(oklch(60% 0.012 262), oklch(55% 0.012 262));
+
+  /* ---- type -------------------------------------------------------- */
+  --font-prose: 'Source Serif 4', Georgia, serif;      /* assistant prose + headings */
+  --font-ui:    'Public Sans', system-ui, sans-serif;  /* chrome, buttons, user msgs */
+  --font-meta:  'JetBrains Mono', ui-monospace, monospace; /* badges, latency, hints */
+
+  /* fluid type scale (min @ 360px viewport, max @ 1200px) */
+  --fs-prose: clamp(15.5px, 1.1vw + 12px, 16.5px);
+  --fs-ui:    clamp(13.5px, 0.6vw + 12px, 14.5px);
+  --fs-small: 12.5px;
+  --fs-meta:  10px;   /* latency badges, kbd hints, provenance pills */
+  --fs-h1:    clamp(26px, 4vw, 34px);   /* empty-state greeting */
+  --fs-h2:    1.22em; /* in-prose headings, relative to --fs-prose */
+  --lh-prose: 1.72;
+  --lh-ui:    1.55;
+
+  /* ---- space & shape ----------------------------------------------- */
+  --measure: 70ch;                       /* reading column max-width */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 24px; --sp-6: clamp(24px, 4vw, 36px);
+  --radius-s: 6px;   /* inline code, small buttons */
+  --radius-m: 10px;  /* cards, user messages */
+  --radius-l: 12px;  /* composer */
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.14);
+}
+
+/* Theme switching: toggle sets color-scheme on the root element.
+   [data-theme] wins over OS preference; omit it to follow the OS. */
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark']  { color-scheme: dark; }
+
+/* Base resets */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-ui);
+  line-height: var(--lh-ui);
+}
+a { color: var(--accent); }
+::selection { background: var(--accent-subtle); }
+
+/* Scroll containers (transcript, sidebar list) */
+.scroll-region {
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
