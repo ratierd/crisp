@@ -1,0 +1,31 @@
+{
+  "name": "@crisp/ai",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./anthropic": "./src/providers/anthropic.ts",
+    "./openai": "./src/providers/openai.ts",
+    "./openai/compatible": "./src/providers/openai-compatible.ts",
+    "./ollama": "./src/providers/ollama.ts",
+    "./client": "./src/client/index.ts",
+    "./vue": "./src/vue/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@crisp/contracts": "workspace:*",
+    "vitest": "4.1.10",
+    "vue": "3.5.39"
+  }
+}

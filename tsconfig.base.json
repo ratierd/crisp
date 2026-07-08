@@ -14,6 +14,13 @@
     "noEmit": true,
     "types": [],
     "paths": {
+      "@crisp/ai": ["./libs/ai/src/index.ts"],
+      "@crisp/ai/anthropic": ["./libs/ai/src/providers/anthropic.ts"],
+      "@crisp/ai/openai": ["./libs/ai/src/providers/openai.ts"],
+      "@crisp/ai/openai/compatible": ["./libs/ai/src/providers/openai-compatible.ts"],
+      "@crisp/ai/ollama": ["./libs/ai/src/providers/ollama.ts"],
+      "@crisp/ai/client": ["./libs/ai/src/client/index.ts"],
+      "@crisp/ai/vue": ["./libs/ai/src/vue/index.ts"],
       "@crisp/contracts": ["./libs/contracts/src/index.ts"],
       "@crisp/domain": ["./libs/domain/src/index.ts"]
     }
