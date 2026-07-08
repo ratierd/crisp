@@ -1,0 +1,38 @@
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      REDIS_URL: redis://redis:6379
+      DB_PATH: /data/crisp.sqlite
+      # Reaches an Ollama daemon on the docker host, if one is running.
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - crisp-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api/health']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 2s
+      retries: 10
+    # Uncomment to reach Redis from the host during development:
+    ports:
+      - '6379:6379'
+
+volumes:
+  crisp-data:
