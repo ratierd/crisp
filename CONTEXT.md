@@ -18,9 +18,13 @@ _Avoid_: Generation, completion, request
 **Model**:
 A concrete LLM a Run can target, described by registry metadata (id, display name, provenance, capabilities).
 
+**Feedback**:
+The user's thumbs-up/down verdict on a Run, given from the assistant Message it produced. Attached to the Run's id in LangSmith.
+_Avoid_: Rating, vote, reaction
+
 **Provenance**:
-Where a Model executes: `local` (e.g. Ollama) or `remote` (e.g. Anthropic, OpenAI). A property of the Model, invisible to the domain logic.
-_Avoid_: Provider type, origin
+Where a Model executes: `local` (the user's own machine — their Ollama, reached directly from the browser when Crisp is deployed) or `remote` (a third-party API, e.g. Anthropic, OpenAI). A property of the Model, invisible to the domain logic.
+_Avoid_: Provider type, origin, self-hosted
 
 **ModelGateway**:
 The port through which the domain starts a Run against any Model, regardless of Provenance. Adapters wrap @crisp/ai provider adapters (in-house, ADR-0003).
