@@ -102,11 +102,23 @@ export async function* demoRun(options: StartRunOptions, config: DemoProviderOpt
 
   const messageId = `${runId}-m0`;
   yield { type: 'TEXT_MESSAGE_START', messageId, role: 'assistant', timestamp: Date.now() };
+  let completionTokens = 0;
   for (const delta of tokenize(pickResponse(lastUser, systemText))) {
     if (options.signal?.aborted) throw new DOMException('The run was stopped.', 'AbortError');
     if (delayMs > 0) await sleep(delayMs);
+    completionTokens += 1;
     yield { type: 'TEXT_MESSAGE_CONTENT', messageId, delta, timestamp: Date.now() };
   }
   yield { type: 'TEXT_MESSAGE_END', messageId, timestamp: Date.now() };
-  yield { type: 'RUN_FINISHED', runId, threadId, finishReason: 'stop', timestamp: Date.now() };
+  // Fabricated-but-plausible usage (≈4 chars/token) so demo traces look like
+  // real ones in observability tooling.
+  const promptTokens = Math.ceil(options.messages.reduce((total, m) => total + m.content.length, 0) / 4);
+  yield {
+    type: 'RUN_FINISHED',
+    runId,
+    threadId,
+    finishReason: 'stop',
+    usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens },
+    timestamp: Date.now(),
+  };
 }

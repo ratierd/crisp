@@ -1,6 +1,9 @@
 import { serveStatic } from 'hono/bun';
+import { Client } from 'langsmith';
+import type { ModelGateway } from '@crisp/domain';
 import { createApp } from './app';
 import { loadEnv } from './infra/env';
+import { LangsmithTracingGateway } from './infra/langsmith-tracing-gateway';
 import { ModelRegistry } from './infra/model-registry';
 import { RedisRunStreamStore } from './infra/redis-run-stream-store';
 import { SqliteConversationRepository } from './infra/sqlite-conversation-repository';
@@ -13,7 +16,13 @@ import { AiModelGateway } from './infra/ai-gateway';
 export const createProductionApp = async () => {
   const env = loadEnv();
   const registry = new ModelRegistry(env);
-  const gateway = new AiModelGateway(env);
+  let gateway: ModelGateway = new AiModelGateway(env);
+  if (env.langsmithApiKey) {
+    // Observability is a decorator on the gateway port (ADR-0005): without
+    // the key the app composes exactly as before.
+    const client = new Client({ apiKey: env.langsmithApiKey });
+    gateway = new LangsmithTracingGateway(gateway, client, env.langsmithProject ?? undefined);
+  }
   const conversations = new SqliteConversationRepository(env.dbPath);
   const runStreams = await RedisRunStreamStore.connect(env.redisUrl);
   const { app, runManager } = createApp({ env, registry, gateway, conversations, runStreams });

@@ -13,6 +13,7 @@
     "@crisp/contracts": "workspace:*",
     "@crisp/domain": "workspace:*",
     "hono": "4.12.28",
+    "langsmith": "^0.8.0",
     "redis": "6.1.0",
     "zod": "4.4.3"
   },

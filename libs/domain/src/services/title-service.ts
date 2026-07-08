@@ -19,7 +19,9 @@ export class TitleService {
     let title = '';
     const events = this.deps.gateway.startRun({
       model,
-      runId: `title-${conversationId}`,
+      // a real UUID: title runs flow through the same gateway decorators
+      // (tracing), and observability backends require UUID run ids
+      runId: crypto.randomUUID(),
       threadId: conversationId,
       messages: [
         { role: 'system', content: TITLE_PROMPT },

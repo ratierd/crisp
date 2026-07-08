@@ -5,6 +5,8 @@ export interface Env {
   ollamaBaseUrl: string;
   anthropicApiKey: string | null;
   openaiApiKey: string | null;
+  langsmithApiKey: string | null;
+  langsmithProject: string | null;
   staticDir: string | null;
 }
 
@@ -15,5 +17,7 @@ export const loadEnv = (source: Record<string, string | undefined> = process.env
   ollamaBaseUrl: source.OLLAMA_BASE_URL ?? 'http://localhost:11434',
   anthropicApiKey: source.ANTHROPIC_API_KEY || null,
   openaiApiKey: source.OPENAI_API_KEY || null,
+  langsmithApiKey: source.LANGSMITH_API_KEY || null,
+  langsmithProject: source.LANGSMITH_PROJECT || null,
   staticDir: source.STATIC_DIR || null,
 });
