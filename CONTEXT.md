@@ -23,7 +23,7 @@ Where a Model executes: `local` (e.g. Ollama) or `remote` (e.g. Anthropic, OpenA
 _Avoid_: Provider type, origin
 
 **ModelGateway**:
-The port through which the domain starts a Run against any Model, regardless of Provenance. Adapters wrap @crisp/ai provider adapters.
+The port through which the domain starts a Run against any Model, regardless of Provenance. Adapters wrap @crisp/ai provider adapters (in-house, ADR-0003).
 
 **ConversationRepository**:
 The port for durable Conversation storage. Adapter: SQLite (bun:sqlite).
