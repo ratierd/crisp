@@ -69,6 +69,7 @@ Everything is optional (see `.env.example`):
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | where the *server* discovers local models |
 | `LANGSMITH_API_KEY` | — | traces every Run to LangSmith; feedback lands on traces |
 | `LANGSMITH_PROJECT` | `crisp` | LangSmith project name |
+| `LANGSMITH_ENDPOINT` | US host | set `https://eu.api.smith.langchain.com` for EU accounts |
 | `REDIS_URL` | `redis://localhost:6379` | run-stream buffer (required) |
 | `DB_PATH` | `./data/crisp.sqlite` | conversation storage |
 | `PORT` | `3000` | API port |

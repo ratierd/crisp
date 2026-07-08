@@ -12,6 +12,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
       LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-crisp}
+      LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     volumes:
