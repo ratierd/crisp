@@ -120,6 +120,7 @@ onBeforeUnmount(() => {
         <div class="section">YOUR OLLAMA · NOT CONNECTED</div>
         <div class="byo-hint">
           Chat with models running on this machine — allow this origin on your daemon, then reopen:
+          <a class="byo-guide" href="/byo-ollama.html" target="_blank" rel="noreferrer">full setup guide →</a>
         </div>
         <button class="byo-cmd" type="button" :title="copied ? 'Copied' : 'Copy command'" @click="copyCommand">
           <code>{{ command }}</code>
@@ -299,6 +300,15 @@ onBeforeUnmount(() => {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-3);
+}
+.byo-guide {
+  margin-left: 4px;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.byo-guide:hover {
+  text-decoration: underline;
 }
 .byo-cmd {
   display: flex;

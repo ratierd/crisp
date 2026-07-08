@@ -46,6 +46,10 @@ OLLAMA_ORIGINS=https://crisp.example.com ollama serve   # the picker shows your 
 
 — and your local models appear and run straight from the browser. On HTTPS
 deployments Chrome asks once for local-network permission; that's the point.
+Step-by-step laptop setup (install → pull → allow origin → browser prompt):
+[docs/byo-ollama.md](docs/byo-ollama.md), also served by the app itself at
+[`/byo-ollama.html`](https://crisp-production-0b9e.up.railway.app/byo-ollama.html)
+and linked from the picker.
 
 To collect traces, cost, and feedback analytics in LangSmith, set
 `LANGSMITH_API_KEY` (and optionally `LANGSMITH_PROJECT`) — see

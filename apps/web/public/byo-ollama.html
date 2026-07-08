@@ -1,0 +1,201 @@
+<!doctype html>
+<!-- Canonical copy: docs/byo-ollama.md — keep in sync. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Crisp — Bring your own Ollama</title>
+<meta name="description" content="How to connect your own local Ollama models to a deployed Crisp instance.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --accent: oklch(0.55 0.12 250);
+    --bg: light-dark(oklch(0.99 0.002 250), oklch(0.19 0.01 250));
+    --text: light-dark(oklch(0.25 0.01 250), oklch(0.88 0.005 250));
+    --text-soft: light-dark(oklch(0.45 0.01 250), oklch(0.68 0.008 250));
+    --code-bg: light-dark(oklch(0.955 0.004 250), oklch(0.245 0.012 250));
+    --border: light-dark(oklch(0.9 0.005 250), oklch(0.32 0.01 250));
+    --font-body: Georgia, 'Times New Roman', serif;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --accent: oklch(0.68 0.12 250); }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2.5rem 1.25rem 5rem;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+  }
+  main, header.site { max-width: 42rem; margin-inline: auto; }
+  header.site {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    color: var(--text-soft);
+  }
+  header.site .brand { letter-spacing: 0.02em; }
+  header.site .brand strong { color: var(--text); font-weight: 600; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a.back { text-decoration: none; white-space: nowrap; }
+  a.back:hover { text-decoration: underline; }
+  h1, h2 {
+    font-family: var(--font-sans);
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
+  h1 { font-size: 2rem; font-weight: 650; margin: 0 0 0.5rem; }
+  h2 { font-size: 1.25rem; font-weight: 600; margin: 2.75rem 0 0.75rem; }
+  p.lede { font-size: 1.125rem; color: var(--text-soft); margin-top: 0; }
+  p { margin: 0 0 1rem; }
+  strong { font-weight: 650; }
+  ul { padding-left: 1.25rem; margin: 0 0 1rem; }
+  li { margin-bottom: 0.6rem; }
+  li > pre { margin-top: 0.5rem; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    margin: 0 0 1rem;
+    line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; font-size: 0.8125rem; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    margin: 0 0 1rem;
+  }
+  th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-soft);
+  }
+  th, td { padding: 0.55rem 0.75rem 0.55rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  .note {
+    border-left: 3px solid var(--accent);
+    padding: 0.1rem 0 0.1rem 1rem;
+    color: var(--text-soft);
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <span class="brand"><strong>Crisp</strong> — Bring your own Ollama</span>
+  <a class="back" href="/">&larr; back to Crisp</a>
+</header>
+<main>
+  <h1>Bring your own Ollama</h1>
+  <p class="lede">Chat with models running on <strong>your</strong> machine, against a deployed Crisp.</p>
+
+  <h2>What this is</h2>
+  <p>Crisp never runs local models on its server — it can't; a deployed server has no way to reach your <code>localhost</code>. Instead, the page in your browser discovers your own Ollama daemon, runs the generation right there in the tab, and streams it into the transcript exactly like a server run. The Crisp server never talks to your Ollama; the only thing it receives is the finished conversation. Your job: install Ollama, pull a model, and tell your daemon that the Crisp origin is allowed to call it. About five minutes.</p>
+
+  <h2>Privacy, honestly</h2>
+  <p>Generation happens on your machine — prompts and tokens flow between your browser tab and your local daemon, and the model itself never leaves your disk. But local-only <em>execution</em> is not local-only <em>storage</em>: once a run finishes, the browser reports the conversation to the Crisp server, which persists it. And when the operator has LangSmith observability enabled, that finished run is mirrored there as a trace too. If you don't want a conversation stored, don't have it here.</p>
+
+  <h2>Step 1 — install Ollama</h2>
+  <ul>
+    <li><strong>macOS / Windows</strong>: download the app from <a href="https://ollama.com/download">ollama.com/download</a> and run it. It lives in the menu bar / system tray.</li>
+    <li><strong>Linux</strong>:
+      <pre><code>curl -fsSL https://ollama.com/install.sh | sh</code></pre>
+      This installs a systemd service that starts on boot.</li>
+  </ul>
+
+  <h2>Step 2 — pull a model</h2>
+  <pre><code>ollama pull llama3.2:3b</code></pre>
+  <p>Some good starting points:</p>
+  <table>
+    <thead><tr><th>model</th><th>size</th><th>good for</th></tr></thead>
+    <tbody>
+      <tr><td><code>smollm2:135m</code></td><td>~0.3&nbsp;GB</td><td>a quick test — downloads in seconds</td></tr>
+      <tr><td><code>llama3.2:3b</code></td><td>~2.5&nbsp;GB</td><td>solid everyday chat on modest hardware</td></tr>
+      <tr><td><code>qwen2.5:7b</code></td><td>~5&nbsp;GB</td><td>stronger answers if you have the RAM</td></tr>
+    </tbody>
+  </table>
+  <p>Any GGUF on HuggingFace works too: <code>ollama pull hf.co/&lt;user&gt;/&lt;repo&gt;</code>.</p>
+
+  <h2>Step 3 — allow the Crisp origin on your daemon</h2>
+  <p>Ollama only accepts browser requests from origins it trusts. Localhost is trusted by default — which is why local dev needs no config — but a deployed Crisp origin is not, so you opt in once with the <code>OLLAMA_ORIGINS</code> environment variable.</p>
+  <p>The fastest way to see it work:</p>
+  <pre><code>OLLAMA_ORIGINS=https://&lt;your-crisp-domain&gt; ollama serve</code></pre>
+  <p>Crisp's model picker shows this exact command with the real origin filled in — open the picker and copy it from there rather than typing the domain by hand.</p>
+  <p>That command lasts until you close the terminal. To make it stick:</p>
+  <ul>
+    <li><strong>macOS (Ollama.app)</strong>:
+      <pre><code>launchctl setenv OLLAMA_ORIGINS "https://&lt;your-crisp-domain&gt;"</code></pre>
+      Then quit and restart Ollama from the menu bar.</li>
+    <li><strong>Windows</strong>: Settings → search "environment variables" → add a <em>user</em> variable named <code>OLLAMA_ORIGINS</code> with value <code>https://&lt;your-crisp-domain&gt;</code>. Quit Ollama from the tray and relaunch it.</li>
+    <li><strong>Linux (systemd service)</strong>:
+      <pre><code>sudo systemctl edit ollama</code></pre>
+      Add:
+      <pre><code>[Service]
+Environment="OLLAMA_ORIGINS=https://&lt;your-crisp-domain&gt;"</code></pre>
+      Then:
+      <pre><code>sudo systemctl restart ollama</code></pre></li>
+  </ul>
+  <p>Multiple origins are comma-separated: <code>OLLAMA_ORIGINS=https://a.example.com,https://b.example.com</code>.</p>
+
+  <h2>Step 4 — the browser prompt</h2>
+  <p>On an HTTPS deployment, Chromium-based browsers (Chrome, Edge, Brave, Arc) ask once for permission before a page may talk to your local network — that's Private Network Access doing its job. Click <strong>Allow</strong>; the page is only reaching your own Ollama on <code>localhost:11434</code>. Firefox doesn't currently gate this, so there's nothing to click. Safari and macOS may show their own Local Network permission dialog — allow that too.</p>
+
+  <h2>Step 5 — use it</h2>
+  <p>Open the model picker in Crisp. Your models appear with a <strong>local</strong> badge and ids like <code>byo/llama3.2:3b</code> — pick one and chat. Streaming, stop, regenerate, and feedback all work exactly as they do with server models.</p>
+  <p>The picker re-checks your daemon every time you open it. Just pulled a new model? Close the picker and reopen it — no reload needed.</p>
+
+  <h2>Troubleshooting</h2>
+  <table>
+    <thead><tr><th>symptom</th><th>fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>No local models in the picker</td>
+        <td>Your daemon isn't running — start the Ollama app, or run <code>ollama serve</code>. If it <em>is</em> running, the origin probably isn't allowed yet: do step&nbsp;3, then reopen the picker.</td>
+      </tr>
+      <tr>
+        <td>Still nothing, daemon and origin both fine</td>
+        <td>You may have denied the browser's local-network prompt. Re-allow it in the browser's site settings for the Crisp domain, then reload.</td>
+      </tr>
+      <tr>
+        <td>403 errors from Ollama</td>
+        <td>An <code>OLLAMA_ORIGINS</code> typo. The value must match the page's origin <em>exactly</em> — scheme included, no trailing slash. <code>https://&lt;your-crisp-domain&gt;</code>, not <code>&lt;your-crisp-domain&gt;</code> or <code>https://&lt;your-crisp-domain&gt;/</code>.</td>
+      </tr>
+      <tr>
+        <td>Requests never reach the daemon</td>
+        <td>Antivirus or a firewall blocking port 11434 locally. Allow the port, or check whether your security software proxies localhost traffic.</td>
+      </tr>
+      <tr>
+        <td>Reloaded mid-answer, the reply stopped</td>
+        <td>Expected. A local run lives in your tab, so a reload can't resume it mid-stream (server runs can). What was generated before the reload is kept.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="note">One last note: the <code>&lt;your-crisp-domain&gt;</code> placeholders in this page are illustrative. The copy button in the model picker gives you the exact command with the real origin — use that.</p>
+</main>
+</body>
+</html>
