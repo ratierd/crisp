@@ -64,6 +64,23 @@ describe('GET /api/models', () => {
     // local models are BYO-only (ADR-0004) — the server never lists Ollama
     expect(models.some((m) => String(m.id).startsWith('ollama/'))).toBe(false);
   });
+
+  it('gates OpenRouter models by OPENROUTER_API_KEY', async () => {
+    const without = makeApp();
+    const withKey = makeApp({ OPENROUTER_API_KEY: 'sk-or-test' });
+
+    const locked = ((await (await without.app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> })
+      .models.filter((m) => m.provider === 'OpenRouter');
+    expect(locked.length).toBeGreaterThan(0);
+    expect(locked.every((m) => m.available === false)).toBe(true);
+    expect(locked[0]!.unavailableReason).toContain('OPENROUTER_API_KEY');
+
+    const open = ((await (await withKey.app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> })
+      .models.filter((m) => m.provider === 'OpenRouter');
+    expect(open.every((m) => m.available === true)).toBe(true);
+    // OpenRouter model names keep their vendor/model form after the provider segment
+    expect(open.some((m) => m.id === 'openrouter/deepseek/deepseek-chat')).toBe(true);
+  });
 });
 
 describe('POST /api/chat', () => {

@@ -2,8 +2,8 @@
 
 A small, polished multi-AI chat client. Vue 3 SPA talking to a Hono API on Bun,
 streaming LLM responses over the [AG-UI protocol](https://docs.ag-ui.com/) —
-from remote providers (Anthropic, OpenAI) and local ones (Ollama), plus a
-zero-key **Demo** model so the app works the moment it starts.
+from remote providers (Anthropic, OpenAI, OpenRouter) and local ones (Ollama),
+plus a zero-key **Demo** model so the app works the moment it starts.
 
 ![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/prototype.html)
 
@@ -74,6 +74,7 @@ Everything is optional (`bun setup` fills these interactively; see
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | — | enables Claude models in the picker |
 | `OPENAI_API_KEY` | — | enables GPT models in the picker |
+| `OPENROUTER_API_KEY` | — | enables OpenRouter models in the picker |
 | `LANGSMITH_API_KEY` | — | traces every Run to LangSmith; feedback lands on traces |
 | `LANGSMITH_PROJECT` | `crisp` | LangSmith project name |
 | `LANGSMITH_ENDPOINT` | US host | set `https://eu.api.smith.langchain.com` for EU accounts |

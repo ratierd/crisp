@@ -1,6 +1,7 @@
 import { chat } from '@crisp/ai';
 import { createAnthropicChat } from '@crisp/ai/anthropic';
 import { createOpenaiChat } from '@crisp/ai/openai';
+import { openaiCompatibleText } from '@crisp/ai/openai/compatible';
 import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/domain';
 import { classifyProviderError } from './classify-error';
 import { demoRun, type DemoProviderOptions } from './demo-provider';
@@ -77,6 +78,17 @@ export class AiModelGateway implements ModelGateway {
       case 'openai':
         if (!this.env.openaiApiKey) throw new Error('OPENAI_API_KEY is missing from the environment.');
         return createOpenaiChat(modelName as OpenaiModel, this.env.openaiApiKey);
+      case 'openrouter': {
+        const key = this.env.openrouterApiKey;
+        if (!key) throw new Error('OPENROUTER_API_KEY is missing from the environment.');
+        return openaiCompatibleText(modelName, {
+          name: 'openrouter',
+          baseURL: 'https://openrouter.ai/api/v1',
+          apiKey: key,
+          api: 'chat-completions',
+          defaultHeaders: { 'X-Title': 'Crisp' },
+        });
+      }
       default:
         throw new Error(`Unknown provider "${providerId}".`);
     }

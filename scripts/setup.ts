@@ -72,6 +72,9 @@ const validateAnthropic = (key: string) =>
 const validateOpenAI = (key: string) =>
   probeAuth('https://api.openai.com/v1/models', { authorization: `Bearer ${key}` });
 
+const validateOpenRouter = (key: string) =>
+  probeAuth('https://openrouter.ai/api/v1/key', { authorization: `Bearer ${key}` });
+
 /**
  * LangSmith keys are region-bound: an EU key 401s against the default US
  * host. On auth failure with no explicit endpoint, retry the EU host and
@@ -335,6 +338,14 @@ async function main(): Promise<void> {
       validate: validateOpenAI,
     }),
   );
+  next.set(
+    'OPENROUTER_API_KEY',
+    await promptKey({
+      label: 'OpenRouter API key',
+      current: original.get('OPENROUTER_API_KEY') ?? '',
+      validate: validateOpenRouter,
+    }),
+  );
 
   p.log.step('Observability — optional; with a LangSmith key every Run becomes a trace');
   let detectedEndpoint: string | undefined;
@@ -367,6 +378,7 @@ async function main(): Promise<void> {
   const managed = [
     'ANTHROPIC_API_KEY',
     'OPENAI_API_KEY',
+    'OPENROUTER_API_KEY',
     'LANGSMITH_API_KEY',
     'LANGSMITH_ENDPOINT',
     'LANGSMITH_PROJECT',
