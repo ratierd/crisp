@@ -1,4 +1,5 @@
-import type { Model } from '@crisp/contracts';
+import type { KeyedProvider, Model } from '@crisp/contracts';
+import { keyedProviderOf } from '@crisp/contracts';
 import type { Env } from './env';
 
 export const DEMO_MODEL: Model = {
@@ -10,7 +11,7 @@ export const DEMO_MODEL: Model = {
 };
 
 interface ProviderCatalog {
-  id: 'anthropic' | 'openai' | 'openrouter';
+  id: KeyedProvider;
   provider: string;
   envVar: string;
   envKey: (env: Env) => string | null;
@@ -55,10 +56,12 @@ const CATALOGS: ProviderCatalog[] = [
 ];
 
 /**
- * The Model registry: remote entries gated by env-key presence. Local models
- * are the user's own Ollama, discovered and executed by the *browser*
- * (ADR-0004) — the server never lists them. `/api/models` doubles as the
- * health check — unavailable Models carry the hint the picker shows.
+ * The Model registry: remote entries gated by env-key presence, but never
+ * hard-gated — a visitor's own key (BYOK, ADR-0006) lights a provider up
+ * per-request. Local models are the user's own Ollama, discovered and
+ * executed by the *browser* (ADR-0004) — the server never lists them.
+ * `/api/models` doubles as the health check — unavailable Models carry the
+ * hint the picker shows.
  */
 export class ModelRegistry {
   constructor(private readonly env: Env) {}
@@ -67,11 +70,21 @@ export class ModelRegistry {
     return [DEMO_MODEL, ...this.remoteModels()];
   }
 
-  /** Resolves a picker id to a Model; unavailable and unknown ids return null. */
-  async find(id: string): Promise<Model | null> {
+  /**
+   * Resolves a picker id to a Model. Unknown ids return null; env-unavailable
+   * ids return null too, unless the request carries the user's own key
+   * (`withUserKey`) and the Model's provider accepts one.
+   */
+  async find(id: string, options: { withUserKey?: boolean } = {}): Promise<Model | null> {
     const models = await this.listModels();
     const model = models.find((m) => m.id === id);
-    return model?.available ? model : null;
+    if (!model) return null;
+    if (model.available) return model;
+    if (options.withUserKey && keyedProviderOf(model.id) !== null) {
+      const { unavailableReason: _, ...rest } = model;
+      return { ...rest, available: true };
+    }
+    return null;
   }
 
   private remoteModels(): Model[] {
@@ -86,7 +99,9 @@ export class ModelRegistry {
           available: hasServerKey,
           ...(hasServerKey
             ? {}
-            : { unavailableReason: `${catalog.envVar} is missing from the environment.` }),
+            : {
+                unavailableReason: `Add your ${catalog.provider} API key below, or set ${catalog.envVar} on the server.`,
+              }),
         }),
       );
     });

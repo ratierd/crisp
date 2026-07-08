@@ -23,8 +23,12 @@ The user's thumbs-up/down verdict on a Run, given from the assistant Message it 
 _Avoid_: Rating, vote, reaction
 
 **Provenance**:
-Where a Model executes: `local` (the user's own machine — their Ollama, always reached directly from the browser) or `remote` (a third-party API, e.g. Anthropic, OpenAI). A property of the Model, invisible to the domain logic.
+Where a Model executes: `local` (the user's own machine — their Ollama, always reached directly from the browser) or `remote` (a third-party API, e.g. Anthropic, OpenAI, OpenRouter). A property of the Model, invisible to the domain logic.
 _Avoid_: Provider type, origin, self-hosted
+
+**BYOK**:
+Bring-your-own-key: a user-supplied provider API key that rides a chat request, makes an env-unavailable remote Model usable for that Run, and is billed to the user's own account. Held in the user's browser, passed through the server per-request, never stored there.
+_Avoid_: User token, credential, session key
 
 **ModelGateway**:
 The port through which the domain starts a Run against any Model, regardless of Provenance. Adapters wrap @crisp/ai provider adapters (in-house, ADR-0003).

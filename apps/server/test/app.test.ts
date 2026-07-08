@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FakeConversationRepository, FakeRunStreamStore } from '@crisp/domain/testing';
+import { FakeConversationRepository, FakeModelGateway, FakeRunStreamStore } from '@crisp/domain/testing';
 import type { RunEvent } from '@crisp/domain';
 import { createApp } from '../src/app';
 import { loadEnv } from '../src/infra/env';
@@ -138,6 +138,34 @@ describe('POST /api/chat', () => {
       body: JSON.stringify(chatBody('conv-x', 'hi', { forwardedProps: { modelId: 'anthropic/claude-sonnet-4-6' } })),
     });
     expect(response.status).toBe(400);
+  });
+
+  it('accepts an env-unavailable model when the user brings their own key (BYOK)', async () => {
+    // no env keys at all — only the user's key makes the model usable
+    const env = loadEnv({});
+    const gateway = new FakeModelGateway();
+    const conversations = new FakeConversationRepository();
+    const runStreams = new FakeRunStreamStore();
+    const { app } = createApp({ env, registry: new ModelRegistry(env), gateway, conversations, runStreams });
+
+    const response = await app.request('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(
+        chatBody('conv-byok', 'hi', {
+          forwardedProps: { modelId: 'anthropic/claude-sonnet-4-6', apiKey: 'sk-ant-user' },
+        }),
+      ),
+    });
+    expect(response.status).toBe(200);
+    await readSse(response);
+
+    // the key reached the gateway for this Run…
+    expect(gateway.calls[0]!.apiKey).toBe('sk-ant-user');
+    // …and was not persisted with the exchange
+    await waitFor(async () => (conversations.messages.get('conv-byok')?.length ?? 0) >= 2);
+    const persisted = JSON.stringify([...conversations.messages.values()]);
+    expect(persisted).not.toContain('sk-ant-user');
   });
 
   it('rejects malformed bodies', async () => {

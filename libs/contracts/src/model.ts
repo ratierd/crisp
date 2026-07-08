@@ -22,3 +22,21 @@ export const modelsResponseSchema = z.object({
   models: z.array(modelSchema),
 });
 export type ModelsResponse = z.infer<typeof modelsResponseSchema>;
+
+/**
+ * Remote providers that accept a user-supplied API key (BYOK): a visitor
+ * pastes their own key in the picker and their chats bill their account.
+ * Shared by the registry (availability), the gateway (key precedence) and
+ * the web picker (key inputs), so the three can never disagree.
+ */
+export const keyedProviderSchema = z.enum(['anthropic', 'openai', 'openrouter']);
+export type KeyedProvider = z.infer<typeof keyedProviderSchema>;
+
+/** The provider segment of a Model id ("anthropic/claude-…" → "anthropic"). */
+export const providerIdOf = (modelId: string): string => modelId.split('/')[0] ?? '';
+
+/** The KeyedProvider a Model id belongs to, or null for demo/byo models. */
+export const keyedProviderOf = (modelId: string): KeyedProvider | null => {
+  const parsed = keyedProviderSchema.safeParse(providerIdOf(modelId));
+  return parsed.success ? parsed.data : null;
+};

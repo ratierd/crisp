@@ -21,6 +21,12 @@ export interface StartRunOptions {
   runId: string;
   threadId: string;
   signal?: AbortSignal;
+  /**
+   * User-supplied provider key (BYOK, ADR-0006). Takes precedence over any
+   * server-configured key, lives only as long as the Run, and must never be
+   * persisted, logged, or forwarded to observability.
+   */
+  apiKey?: string;
 }
 
 /**

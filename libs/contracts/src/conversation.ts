@@ -71,13 +71,16 @@ export type ConversationListResponse = z.infer<typeof conversationListResponseSc
  * Body of POST /api/chat: the AG-UI RunAgentInput the @crisp/ai client
  * sends. `threadId` doubles as the Conversation id (client-generated);
  * `messages` cross the API untranslated (ADR-0002) — the server only relies
- * on role and text content. The selected Model travels in forwardedProps.
+ * on role and text content. The selected Model travels in forwardedProps,
+ * along with the user's own provider key when they brought one (BYOK):
+ * it is used for this Run and never persisted or logged (ADR-0006).
  */
 export const chatRequestSchema = z.looseObject({
   threadId: z.string().min(1),
   messages: z.array(z.unknown()).min(1),
   forwardedProps: z.looseObject({
     modelId: z.string().min(1),
+    apiKey: z.string().min(1).max(512).optional(),
   }),
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { byoConnectCommand } from '../lib/byo';
+import { KEYED_PROVIDERS } from '../lib/keys';
 import { useAppStore } from '../stores/app';
 import ProvenanceBadge from './ProvenanceBadge.vue';
 
@@ -11,6 +12,16 @@ const toggle = () => {
   open.value = !open.value;
   // the user may have just configured OLLAMA_ORIGINS — re-check on open
   if (open.value && !store.byoConnected) void store.loadModels();
+};
+
+// BYOK inputs: drafts commit on change/enter, showing a masked placeholder
+// for keys already saved. Keys never render back into the input.
+const keyDrafts = reactive<Record<string, string>>({});
+const keysOpen = ref(false);
+const anyLocked = computed(() => store.models.some((m) => !m.available));
+const commitKey = (provider: (typeof KEYED_PROVIDERS)[number]['id']) => {
+  store.setApiKey(provider, keyDrafts[provider] ?? '');
+  keyDrafts[provider] = '';
 };
 
 const pick = (id: string, available: boolean) => {
@@ -68,6 +79,41 @@ onBeforeUnmount(() => {
         <div v-if="!model.available && model.unavailableReason" class="hint">
           {{ model.unavailableReason }}
         </div>
+      </div>
+
+      <div v-if="anyLocked || keysOpen || Object.keys(store.apiKeys).length > 0" class="keys">
+        <button class="keys-toggle" type="button" @click="keysOpen = !keysOpen">
+          <span class="section keys-title">YOUR API KEYS</span>
+          <span class="keys-chevron">{{ keysOpen ? '▴' : '▾' }}</span>
+        </button>
+        <template v-if="keysOpen">
+          <div class="keys-hint">
+            Chat on your own account — keys stay in this browser and ride only your own requests.
+          </div>
+          <div v-for="provider in KEYED_PROVIDERS" :key="provider.id" class="key-row">
+            <a class="key-label" :href="provider.consoleUrl" target="_blank" rel="noreferrer">{{
+              provider.label
+            }}</a>
+            <input
+              v-model="keyDrafts[provider.id]"
+              class="key-input"
+              type="password"
+              autocomplete="off"
+              :placeholder="store.apiKeys[provider.id] ? '••••••••••• saved' : provider.placeholder"
+              @change="commitKey(provider.id)"
+              @keydown.enter.prevent="commitKey(provider.id)"
+            />
+            <button
+              v-if="store.apiKeys[provider.id]"
+              class="key-clear"
+              type="button"
+              :aria-label="`Clear ${provider.label} key`"
+              @click="store.setApiKey(provider.id, '')"
+            >
+              clear
+            </button>
+          </div>
+        </template>
       </div>
 
       <div v-if="!store.byoConnected" class="byo">
@@ -166,6 +212,81 @@ onBeforeUnmount(() => {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-3);
+}
+.keys {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-faint);
+}
+.keys-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.keys-title {
+  flex: 1;
+  text-align: left;
+}
+.keys-chevron {
+  padding: 0 10px;
+  font-size: 8.5px;
+  color: var(--text-3);
+}
+.keys-hint {
+  padding: 0 10px 6px;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+}
+.key-label {
+  width: 76px;
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+.key-label:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.key-input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  background: var(--code-bg);
+  border: 1px solid var(--border-faint);
+  border-radius: var(--radius-s);
+  color: var(--text);
+  font-family: var(--font-meta);
+  font-size: 11px;
+}
+.key-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.key-clear {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-family: var(--font-meta);
+  font-size: 9.5px;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.key-clear:hover {
+  color: var(--accent);
 }
 .byo {
   margin-top: 6px;

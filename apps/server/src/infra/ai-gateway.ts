@@ -44,7 +44,7 @@ export class AiModelGateway implements ModelGateway {
 
     try {
       const stream = chat({
-        adapter: this.adapterFor(providerId ?? '', modelName),
+        adapter: this.adapterFor(providerId ?? '', modelName, options.apiKey),
         messages,
         ...(systemPrompts.length > 0 ? { systemPrompts } : {}),
         threadId: options.threadId,
@@ -70,16 +70,22 @@ export class AiModelGateway implements ModelGateway {
     }
   }
 
-  private adapterFor(providerId: string, modelName: string) {
+  // A user-supplied key (BYOK, ADR-0006) always wins over the server's env
+  // key: the visitor asked for their own account to be billed.
+  private adapterFor(providerId: string, modelName: string, userKey?: string) {
     switch (providerId) {
-      case 'anthropic':
-        if (!this.env.anthropicApiKey) throw new Error('ANTHROPIC_API_KEY is missing from the environment.');
-        return createAnthropicChat(modelName as AnthropicModel, this.env.anthropicApiKey);
-      case 'openai':
-        if (!this.env.openaiApiKey) throw new Error('OPENAI_API_KEY is missing from the environment.');
-        return createOpenaiChat(modelName as OpenaiModel, this.env.openaiApiKey);
+      case 'anthropic': {
+        const key = userKey ?? this.env.anthropicApiKey;
+        if (!key) throw new Error('ANTHROPIC_API_KEY is missing from the environment.');
+        return createAnthropicChat(modelName as AnthropicModel, key);
+      }
+      case 'openai': {
+        const key = userKey ?? this.env.openaiApiKey;
+        if (!key) throw new Error('OPENAI_API_KEY is missing from the environment.');
+        return createOpenaiChat(modelName as OpenaiModel, key);
+      }
       case 'openrouter': {
-        const key = this.env.openrouterApiKey;
+        const key = userKey ?? this.env.openrouterApiKey;
         if (!key) throw new Error('OPENROUTER_API_KEY is missing from the environment.');
         return openaiCompatibleText(modelName, {
           name: 'openrouter',

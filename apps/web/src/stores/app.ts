@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia';
-import type { Conversation, Model } from '@crisp/contracts';
+import type { Conversation, KeyedProvider, Model } from '@crisp/contracts';
+import { keyedProviderOf } from '@crisp/contracts';
 import * as api from '../lib/api';
 import { discoverByoModels } from '../lib/byo';
+import { loadApiKeys, saveApiKeys, type ApiKeys } from '../lib/keys';
 
 type Theme = 'light' | 'dark';
 
@@ -50,6 +52,8 @@ export const useAppStore = defineStore('app', {
       selectedModelId: localStorage.getItem(MODEL_KEY) ?? 'demo/demo',
       /** True once the browser has found the user's own Ollama (ADR-0004). */
       byoConnected: false,
+      /** The visitor's own provider keys (BYOK, ADR-0006) — this browser only. */
+      apiKeys: loadApiKeys() as ApiKeys,
       theme: (localStorage.getItem(THEME_KEY) as Theme | null) ?? null,
       sidebarOpen: true,
       sidebarWidth: initialSidebarWidth(),
@@ -60,6 +64,13 @@ export const useAppStore = defineStore('app', {
   getters: {
     selectedModel(state): Model | null {
       return state.models.find((m) => m.id === state.selectedModelId) ?? null;
+    },
+    /** The user key the given Model runs on, if they brought one. */
+    userApiKeyFor(state): (modelId: string) => string | null {
+      return (modelId) => {
+        const provider = keyedProviderOf(modelId);
+        return (provider && state.apiKeys[provider]) || null;
+      };
     },
     activeConversation(state): Conversation | null {
       return state.conversations.find((c) => c.id === state.activeConversationId) ?? null;
@@ -74,11 +85,26 @@ export const useAppStore = defineStore('app', {
       // server registry (demo + remote) + the browser's own view of the user's Ollama
       const [server, byo] = await Promise.all([api.getModels(), discoverByoModels()]);
       this.byoConnected = byo.length > 0;
-      this.models = [...server, ...byo];
+      // a user key lights up models the server has no key for (BYOK)
+      this.models = [...server.map((m) => this.withUserKey(m)), ...byo];
       const selected = this.models.find((m) => m.id === this.selectedModelId);
       if (!selected?.available) {
         this.selectedModelId = this.models.find((m) => m.available)?.id ?? 'demo/demo';
       }
+    },
+
+    withUserKey(model: Model): Model {
+      if (model.available || !this.userApiKeyFor(model.id)) return model;
+      const { unavailableReason: _, ...rest } = model;
+      return { ...rest, available: true };
+    },
+
+    setApiKey(provider: KeyedProvider, key: string) {
+      const trimmed = key.trim();
+      if (trimmed.length > 0) this.apiKeys[provider] = trimmed;
+      else delete this.apiKeys[provider];
+      saveApiKeys(this.apiKeys);
+      void this.loadModels(); // availability may have just changed
     },
 
     async loadConversations() {

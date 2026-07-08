@@ -28,6 +28,12 @@ No Bun? Copy `.env.example` to `.env` and fill it by hand — everything in it
 is optional. Inline env vars work too:
 `ANTHROPIC_API_KEY=sk-... docker compose up --build`.
 
+Remote models are also **BYOK**: a visitor pastes their own Anthropic, OpenAI,
+or OpenRouter key into the model picker and chats on their own account
+(ADR-0006). The key stays in that browser's localStorage, rides each request
+next to the model id, is used for that Run, and is never stored or logged
+server-side.
+
 Local models are **BYO Ollama** — always discovered and run by the *browser*,
 never the server, exactly as they would be against a deployed Crisp. On
 localhost a running daemon just works (Ollama allows localhost origins by
@@ -90,6 +96,10 @@ Everything is optional (`bun setup` fills these interactively; see
   check; a dead provider's models stay visible but disabled, with a hint
   explaining why (missing key), and the picker shows the one-line command
   that connects your own Ollama.
+- **BYOK — bring your own key**: paste your Anthropic / OpenAI / OpenRouter
+  key in the picker and the disabled models light up; your chats (and their
+  auto-titles) bill your account. Keys live in your browser only, travel
+  per-request, and are never persisted or logged server-side (ADR-0006).
 - **Mid-stream resume**: refresh the page while the model is answering and the
   stream reattaches and keeps writing. Runs execute detached from the HTTP
   request; a dropped connection doesn't kill generation.

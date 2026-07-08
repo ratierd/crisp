@@ -57,7 +57,10 @@ export const createApp = (deps: AppDeps) => {
     if (!parsed.success) return c.json({ error: 'Malformed chat request.' }, 400);
     const { threadId: conversationId, messages, forwardedProps } = parsed.data;
 
-    const model = await deps.registry.find(forwardedProps.modelId);
+    // BYOK (ADR-0006): a user-supplied key makes an env-unavailable Model
+    // usable for this request. The key is handed to the gateway and dropped.
+    const userApiKey = forwardedProps.apiKey;
+    const model = await deps.registry.find(forwardedProps.modelId, { withUserKey: userApiKey !== undefined });
     if (!model) return c.json({ error: `Model "${forwardedProps.modelId}" is not available.` }, 400);
 
     if ((await deps.runStreams.activeRun(conversationId)) !== null) {
@@ -79,7 +82,13 @@ export const createApp = (deps: AppDeps) => {
       userMessage = undefined;
     }
 
-    const runId = runManager.start({ conversationId, model, history, userMessage });
+    const runId = runManager.start({
+      conversationId,
+      model,
+      history,
+      userMessage,
+      ...(userApiKey ? { apiKey: userApiKey } : {}),
+    });
 
     // The response streams from the RunStreamStore, not the gateway: the Run
     // itself is detached, so a dropped connection doesn't kill generation.

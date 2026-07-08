@@ -6,6 +6,8 @@ export interface StartInput {
   model: Model;
   history: GatewayMessage[];
   userMessage?: Message;
+  /** User-supplied provider key (BYOK) — held for this Run only, never stored. */
+  apiKey?: string;
 }
 
 /**
@@ -35,7 +37,7 @@ export class RunManager {
           // Drain: RunService tees every event into the RunStreamStore,
           // which is what HTTP responses actually stream from.
         }
-        await this.maybeGenerateTitle(input.conversationId, input.model);
+        await this.maybeGenerateTitle(input.conversationId, input.model, input.apiKey);
       } catch (error) {
         console.error(`run ${runId} failed outside the event stream`, error);
       } finally {
@@ -59,13 +61,13 @@ export class RunManager {
   }
 
   /** Auto-title after the first exchange, with the Model that answered. */
-  private async maybeGenerateTitle(conversationId: string, model: Model): Promise<void> {
+  private async maybeGenerateTitle(conversationId: string, model: Model, apiKey?: string): Promise<void> {
     const conversation = await this.conversations.get(conversationId);
     if (!conversation || conversation.messages.length !== 2) return;
     const [user, assistant] = conversation.messages;
     if (user?.role !== 'user' || assistant?.role !== 'assistant') return;
     const text = (message: Message) => message.parts.map((p) => p.content).join('');
-    await this.titles.generate(conversationId, model, text(user), text(assistant)).catch((error) => {
+    await this.titles.generate(conversationId, model, text(user), text(assistant), apiKey).catch((error) => {
       console.error(`title generation failed for ${conversationId}`, error);
     });
   }

@@ -33,6 +33,17 @@ describe('TitleService', () => {
     expect((await conversations.get(conversation.id))!.title).toBe('Serif legibility');
   });
 
+  it('forwards the BYOK key so the title run bills the same account', async () => {
+    const gateway = new FakeModelGateway({
+      events: [{ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm', delta: 'A title' }],
+    });
+    const { conversations, service } = setup(gateway);
+    const conversation = await conversations.create('why serif?');
+
+    await service.generate(conversation.id, demoModel, 'why serif?', 'Because…', 'sk-user');
+    expect(gateway.calls[0]!.apiKey).toBe('sk-user');
+  });
+
   it('keeps the fallback title when the title run errors', async () => {
     const gateway = new FakeModelGateway({
       events: [{ type: 'RUN_ERROR', code: 'provider_unavailable', message: 'down' }],

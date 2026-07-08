@@ -47,9 +47,11 @@ const chat = useChat({
   connection: crispConnection(() => store.selectedModel),
   threadId: props.conversationId,
   // getter: useChat watches this and pushes updates into the client,
-  // so the picker's current Model rides along on every send
+  // so the picker's current Model rides along on every send — with the
+  // user's own key for that Model's provider when they brought one (BYOK)
   get forwardedProps() {
-    return { modelId: store.selectedModelId };
+    const apiKey = store.userApiKeyFor(store.selectedModelId);
+    return { modelId: store.selectedModelId, ...(apiKey ? { apiKey } : {}) };
   },
   onChunk(chunk) {
     const event = chunk as { type: string; [key: string]: unknown };

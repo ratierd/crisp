@@ -17,6 +17,8 @@ export interface ExecuteRunInput {
   /** Persisted before the Run starts; absent when regenerating. */
   userMessage?: Message;
   signal?: AbortSignal;
+  /** User-supplied provider key (BYOK) — forwarded to the gateway, nowhere else. */
+  apiKey?: string;
 }
 
 const textDelta = (event: RunEvent): string | null =>
@@ -81,6 +83,7 @@ export class RunService {
         runId,
         threadId: input.conversationId,
         signal: input.signal,
+        ...(input.apiKey ? { apiKey: input.apiKey } : {}),
       });
       for await (const event of events) {
         const delta = textDelta(event);

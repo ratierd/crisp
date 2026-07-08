@@ -15,7 +15,13 @@ export interface TitleServiceDeps {
 export class TitleService {
   constructor(private readonly deps: TitleServiceDeps) {}
 
-  async generate(conversationId: string, model: Model, userText: string, assistantText: string): Promise<void> {
+  async generate(
+    conversationId: string,
+    model: Model,
+    userText: string,
+    assistantText: string,
+    apiKey?: string,
+  ): Promise<void> {
     let title = '';
     const events = this.deps.gateway.startRun({
       model,
@@ -27,6 +33,8 @@ export class TitleService {
         { role: 'system', content: TITLE_PROMPT },
         { role: 'user', content: `User: ${userText.slice(0, 500)}\n\nAssistant: ${assistantText.slice(0, 500)}` },
       ],
+      // the same BYOK key that ran the exchange also titles it
+      ...(apiKey ? { apiKey } : {}),
     });
     for await (const event of events) {
       if (event.type === 'RUN_ERROR') return; // keep the fallback title
