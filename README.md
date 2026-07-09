@@ -19,11 +19,16 @@ models, connect OpenRouter in one click (OAuth, no key to paste), paste your
 own provider key in the picker (BYOK), or connect
 [your own Ollama](docs/byo-ollama.md).
 
-![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/readme.png)
+![quiet editorial UI: typography-first, no chat bubbles, one accent color, an aurora glowing under a frosted-glass composer](docs/design/readme.png)
 
 ## Run it
 
+The only prerequisite is [Docker](https://docs.docker.com/get-started/get-docker/)
+with Compose v2 (`docker compose version` to check — ships with Docker
+Desktop and modern Docker Engine):
+
 ```sh
+git clone https://github.com/ratierd/crisp.git && cd crisp
 docker compose up --build
 # → http://localhost:3000
 ```
@@ -73,6 +78,11 @@ To collect traces, cost, and feedback analytics in LangSmith, set
 [Observability](#architecture) below.
 
 ### Development
+
+Needs [Bun](https://bun.sh) 1.3+ (runtime and package manager — no Node
+required) and Docker for Redis. [Ollama](https://ollama.com/download) is
+optional: install it, pull a model, and it appears in the picker (the wizard
+below walks you through it).
 
 ```sh
 bun install
@@ -152,7 +162,9 @@ Everything is optional (`bun setup` fills these interactively; see
   regeneration attempt, persisted with the message.
 - **Polish pack**: dark/light from one OKLCH token set (`light-dark()`),
   keyboard shortcuts (Enter / Shift+Enter / Esc / ⌘K), per-message latency
-  badges (time-to-first-token · tok/s), responsive down to mobile.
+  badges (time-to-first-token · tok/s), responsive down to mobile, and an
+  aurora drifting under the frosted-glass composer — it fades out of the way
+  while you read history.
 
 ## Architecture
 

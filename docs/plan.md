@@ -48,3 +48,16 @@ Domain language lives in [CONTEXT.md](../CONTEXT.md); decisions with real tradeo
 5. Playwright smoke, README (architecture, tradeoffs, env vars, "with more time"), compose hardening, demo pass.
 
 **Cut lines if behind:** mid-stream resume degrades to reconnect-shows-persisted-partial; latency badges; auto-titles.
+
+## Revisited since (the plan is a record, not the current state)
+
+- **Deployment**: "no hosted URL" was reversed — Crisp is live on Railway
+  with the topology as code (`.railway/railway.ts`); local models still work
+  against the hosted instance because BYO Ollama runs in the browser
+  (ADR-0004).
+- **Architecture layout**: `libs/domain` + `libs/contracts` were dissolved
+  into five feature slices, each owning its contracts and ports (ADR-0008).
+- **Providers**: OpenRouter joined (with one-click OAuth connect), and remote
+  models became BYOK-capable (ADR-0006).
+- **The Tour** (ADR-0009): the empty state asks the product about itself; the
+  Demo model stays on in the deployed app so this works with zero setup.
