@@ -7,6 +7,9 @@
   ],
   "scripts": {
     "dev": "nx run-many -t dev --parallel 2 --output-style stream",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test,test-contract",
     "coverage": "nx run-many -t test --skip-nx-cache -- --coverage --coverage.include='src/**' --coverage.exclude='src/**/*.test.ts'",
@@ -16,9 +19,12 @@
   },
   "devDependencies": {
     "@clack/prompts": "1.7.0",
+    "@nx/eslint-plugin": "23.0.1",
     "@types/bun": "1.3.14",
     "@vitest/coverage-v8": "^4.1.10",
     "nx": "23.0.1",
+    "oxfmt": "0.58.0",
+    "oxlint": "1.73.0",
     "railway": "^3.5.2",
     "typescript": "6.0.3"
   }

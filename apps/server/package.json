@@ -1,6 +1,9 @@
 {
   "name": "@crisp/server",
   "private": true,
+  "nx": {
+    "tags": ["scope:server"]
+  },
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",

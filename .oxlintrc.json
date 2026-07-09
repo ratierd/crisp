@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vue"],
+  "categories": {
+    "correctness": "error"
+  },
+  "jsPlugins": ["@nx/eslint-plugin"],
+  "rules": {
+    "@nx/enforce-module-boundaries": [
+      "error",
+      {
+        "depConstraints": [
+          { "sourceTag": "scope:contracts", "onlyDependOnLibsWithTags": [] },
+          { "sourceTag": "scope:ai", "onlyDependOnLibsWithTags": ["scope:contracts"] },
+          { "sourceTag": "scope:domain", "onlyDependOnLibsWithTags": ["scope:contracts"] },
+          {
+            "sourceTag": "scope:server",
+            "onlyDependOnLibsWithTags": ["scope:domain", "scope:ai", "scope:contracts"]
+          },
+          { "sourceTag": "scope:web", "onlyDependOnLibsWithTags": ["scope:ai", "scope:contracts"] }
+        ]
+      }
+    ]
+  }
+}

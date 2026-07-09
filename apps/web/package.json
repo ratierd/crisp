@@ -1,6 +1,9 @@
 {
   "name": "@crisp/web",
   "private": true,
+  "nx": {
+    "tags": ["scope:web"]
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

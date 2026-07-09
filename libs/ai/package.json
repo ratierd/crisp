@@ -1,6 +1,9 @@
 {
   "name": "@crisp/ai",
   "private": true,
+  "nx": {
+    "tags": ["scope:ai"]
+  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
