@@ -10,7 +10,11 @@ const mocks = vi.hoisted(() => ({
   postByoRun: vi.fn(async (_conversationId: string, _run: Record<string, unknown>) => undefined),
 }));
 
-vi.mock('@crisp/ai', () => ({ chat: mocks.chat }));
+// only the model call is faked — the wire codec stays real
+vi.mock('@crisp/ai', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@crisp/ai')>()),
+  chat: mocks.chat,
+}));
 vi.mock('@crisp/ai/ollama', () => ({ createOllamaChat: mocks.createOllamaChat }));
 vi.mock('@crisp/ai/client', () => ({
   fetchServerSentEvents: vi.fn(() => ({ connect: mocks.sseConnect })),

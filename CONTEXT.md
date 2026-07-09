@@ -18,6 +18,10 @@ _Avoid_: Generation, completion, request
 **Model**:
 A concrete LLM a Run can target, described by registry metadata (id, display name, provenance, capabilities).
 
+**Wire Message**:
+A Message in the loose shape it crosses the AG-UI wire — in the chat request and in the BYO run report. Only its role and text content are meaningful to the rest of the system; everything else rides along untranslated (ADR-0002).
+_Avoid_: Raw message, wire format, payload message
+
 **Feedback**:
 The user's thumbs-up/down verdict on a Run, given from the assistant Message it produced. Attached to the Run's id in LangSmith.
 _Avoid_: Rating, vote, reaction

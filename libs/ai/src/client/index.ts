@@ -1,6 +1,8 @@
 import type { StreamChunk } from '../core/types';
+import { uiMessagesToWire } from '../wire';
 
 export type { StreamChunk };
+export { uiMessagesToWire };
 
 /**
  * A message as the chat client holds it: AG-UI parts, plus the metadata the
@@ -39,20 +41,6 @@ export interface ConnectConnectionAdapter {
     runContext?: RunContext,
   ): AsyncIterable<StreamChunk>;
 }
-
-/**
- * UI messages → AG-UI wire format: each anchor message keeps its `parts` and
- * gains a `content` string mirror (the joined text parts), which is what
- * loosely-typed servers read first (see the server's wire.ts).
- */
-export const uiMessagesToWire = (messages: UIMessage[]): Array<Record<string, unknown>> =>
-  messages.map((message) => {
-    const text = message.parts
-      .filter((part) => part.type === 'text')
-      .map((part) => part.content)
-      .join('');
-    return { ...message, content: text };
-  });
 
 const generateRunId = (): string => `run-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 

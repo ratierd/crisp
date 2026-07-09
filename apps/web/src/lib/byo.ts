@@ -1,7 +1,7 @@
-import { chat, type StreamChunk } from '@crisp/ai';
+import { chat, readWireMessages, type StreamChunk } from '@crisp/ai';
 import { createOllamaChat } from '@crisp/ai/ollama';
 import { fetchServerSentEvents, type ConnectConnectionAdapter } from '@crisp/ai/client';
-import type { ByoRunRequest, Message, Model } from '@crisp/contracts';
+import type { ByoRunRequest, Model } from '@crisp/contracts';
 import * as api from './api';
 
 /**
@@ -78,55 +78,6 @@ interface Chunk {
   [key: string]: unknown;
 }
 
-/** Minimal reading of the UI messages the chat client hands a connection. */
-interface WireLike {
-  id?: string;
-  role?: string;
-  content?: string | Array<{ type?: string; text?: string }>;
-  parts?: Array<{ type?: string; content?: string }>;
-}
-
-const textOf = (message: WireLike): string => {
-  if (typeof message.content === 'string') return message.content;
-  if (Array.isArray(message.parts)) {
-    const fromParts = message.parts
-      .filter((part) => part.type === 'text' && typeof part.content === 'string')
-      .map((part) => part.content)
-      .join('');
-    if (fromParts.length > 0) return fromParts;
-  }
-  if (Array.isArray(message.content)) {
-    return message.content
-      .filter((part) => part.type === 'text' && typeof part.text === 'string')
-      .map((part) => part.text)
-      .join('');
-  }
-  return '';
-};
-
-const toHistory = (messages: WireLike[]): ByoRunRequest['history'] =>
-  messages
-    .filter(
-      (m): m is WireLike & { role: 'user' | 'assistant' | 'system' } =>
-        m.role === 'user' || m.role === 'assistant' || m.role === 'system',
-    )
-    .map((m) => ({ role: m.role, content: textOf(m) }))
-    .filter((m) => m.content.length > 0);
-
-/** The trailing user message as a persistable Message (mirrors server wire.ts). */
-const trailingUserMessage = (messages: WireLike[]): Message | undefined => {
-  const last = messages.at(-1);
-  if (!last || last.role !== 'user') return undefined;
-  const content = textOf(last);
-  if (content.length === 0) return undefined;
-  return {
-    id: typeof last.id === 'string' && last.id.length > 0 ? last.id : crypto.randomUUID(),
-    role: 'user',
-    parts: [{ type: 'text', content }],
-    createdAt: new Date().toISOString(),
-  };
-};
-
 /**
  * Runs one generation against the user's Ollama, in the page. Yields the
  * same AG-UI events a server run would (ADR-0002 pays off: the transcript
@@ -136,14 +87,16 @@ const trailingUserMessage = (messages: WireLike[]): Message | undefined => {
  */
 async function* runByoModel(
   model: Model,
-  wireMessages: WireLike[],
+  wireMessages: unknown[],
   signal: AbortSignal | undefined,
   threadId: string,
 ): AsyncIterable<Chunk> {
   // client-minted UUID: it becomes the LangSmith run id and Feedback anchor
   const runId = crypto.randomUUID();
-  const history = toHistory(wireMessages);
-  const userMessage = trailingUserMessage(wireMessages);
+  // Same reading the server does (@crisp/ai wire codec) — the history run
+  // here and the report persisted below can never diverge.
+  const { history, trailingUserMessage } = readWireMessages(wireMessages);
+  const userMessage = trailingUserMessage ?? undefined;
   const startedAt = Date.now();
   const startedPerf = performance.now();
   let firstTokenPerf = 0;
@@ -246,7 +199,7 @@ export const crispConnection = (selectedModel: () => Model | null): ConnectConne
       if (model && isByoModelId(model.id) && runContext) {
         return runByoModel(
           model,
-          messages as WireLike[],
+          messages,
           abortSignal,
           runContext.threadId,
         ) as AsyncIterable<StreamChunk>;

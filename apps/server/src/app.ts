@@ -1,4 +1,4 @@
-import { toServerSentEventsResponse } from '@crisp/ai';
+import { readWireMessages, toServerSentEventsResponse } from '@crisp/ai';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { getCookie } from 'hono/cookie';
@@ -18,7 +18,6 @@ import type { ModelRegistry } from './infra/model-registry';
 import { RATE_RULES, rateLimit } from './middleware/rate-limit';
 import type { RateRuleName, RateRules, TokenBucketStore } from './middleware/rate-limit';
 import { RunManager } from './run-manager';
-import { toGatewayHistory, trailingUserMessage } from './wire';
 
 /** Generous for chat history, hostile to memory-exhaustion bodies. */
 const MAX_BODY_BYTES = 256 * 1024;
@@ -176,7 +175,9 @@ export const createApp = (deps: AppDeps) => {
     if (!model)
       return c.json({ error: `Model "${forwardedProps.modelId}" is not available.` }, 400);
 
-    const history = toGatewayHistory(messages);
+    // One reading (@crisp/ai wire codec): the history the Model runs and the
+    // user Message persisted below can never come from divergent parses.
+    const { history, trailingUserMessage } = readWireMessages(messages);
     if (history.length === 0) return c.json({ error: 'No usable messages in request.' }, 400);
 
     // One live Run per Conversation, enforced atomically: the claim happens
@@ -193,7 +194,7 @@ export const createApp = (deps: AppDeps) => {
 
     try {
       const owner = c.get('owner');
-      let userMessage = trailingUserMessage(messages) ?? undefined;
+      let userMessage = trailingUserMessage ?? undefined;
       const existing = await conversationService.get(conversationId, owner);
       if (!existing) {
         const firstUserText = history.find((m) => m.role === 'user')?.content ?? '';
