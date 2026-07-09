@@ -197,6 +197,22 @@ describe('layout and navigation', () => {
     expect(store.sidebarOpen).toBe(false);
   });
 
+  it('recoverDeadConversation rolls a dead active id to a fresh conversation', () => {
+    localStorage.setItem('crisp:active-conversation', 'dead-1');
+    const store = useAppStore();
+    store.recoverDeadConversation('dead-1');
+    expect(store.activeConversationId).not.toBe('dead-1');
+    expect(store.freshConversationIds.has(store.activeConversationId)).toBe(true);
+    expect(localStorage.getItem('crisp:active-conversation')).toBe(store.activeConversationId);
+  });
+
+  it('recoverDeadConversation is a no-op when the user already switched away', () => {
+    const store = useAppStore();
+    store.openConversation('conv-7');
+    store.recoverDeadConversation('dead-1'); // stale 404 from a slow load
+    expect(store.activeConversationId).toBe('conv-7');
+  });
+
   it('newConversation mints a fresh id and marks it fresh until the server lists it', async () => {
     const store = useAppStore();
     store.newConversation();

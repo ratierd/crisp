@@ -146,6 +146,17 @@ export const useAppStore = defineStore('app', {
       if (this.narrow) this.sidebarOpen = false;
     },
 
+    /**
+     * A non-fresh Conversation id that 404s on load is dead — the row is
+     * invisible to this visitor (e.g. it predates owner scoping), so every
+     * send into it can only 409. Roll to a fresh Conversation instead of
+     * keeping it as the send target; guarded so a slow load can't clobber
+     * a conversation the user already switched to.
+     */
+    recoverDeadConversation(id: string) {
+      if (this.activeConversationId === id) this.newConversation();
+    },
+
     async removeConversation(id: string) {
       await api.deleteConversation(id);
       this.conversations = this.conversations.filter((c) => c.id !== id);

@@ -270,7 +270,11 @@ onMounted(async () => {
   // fetching it would only 404
   if (store.freshConversationIds.has(props.conversationId)) return;
   const conversation = await api.getConversation(props.conversationId);
-  if (!conversation) return;
+  if (!conversation) {
+    // dead id (404): sending into it could only ever 409 — roll to a fresh one
+    store.recoverDeadConversation(props.conversationId);
+    return;
+  }
   applyServerMessages(conversation.messages);
   scrollToBottom(true);
   if (conversation.activeRunId) void resume(conversation.activeRunId);
