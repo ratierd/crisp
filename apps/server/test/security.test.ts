@@ -51,6 +51,8 @@ describe('CSP contract with apps/web', () => {
       "'self'",
       'http://localhost:11434',
       'http://127.0.0.1:11434',
+      // OpenRouter OAuth PKCE — the browser exchanges the ?code for a key.
+      'https://openrouter.ai',
     ]);
     // data: fonts — Vite inlines small font subsets into the CSS as data: URIs.
     expect(CSP_DIRECTIVES.fontSrc).toEqual(["'self'", 'data:']);

@@ -20,8 +20,10 @@ export const CSP_INLINE_SCRIPT_HASHES = [
 /**
  * Enforced CSP for HTML documents (frontend's spec). Notable directives:
  * - script-src: only bundled modules, WASM (Shiki), and the hashed theme snippet.
- * - connect-src: same-origin APIs plus the visitor's own Ollama daemon on
- *   localhost — BYO models are fetched by the *browser* (ADR-0004).
+ * - connect-src: same-origin APIs, the visitor's own Ollama daemon on
+ *   localhost — BYO models are fetched by the *browser* (ADR-0004) — and
+ *   openrouter.ai, where the browser exchanges the OAuth PKCE code for a
+ *   user-scoped key (ADR-0006's one-click connect).
  * - style-src-attr 'unsafe-inline': Vue/Shiki inline style attributes.
  */
 export const CSP_DIRECTIVES = {
@@ -33,7 +35,12 @@ export const CSP_DIRECTIVES = {
   ],
   styleSrc: ["'self'"],
   styleSrcAttr: ["'unsafe-inline'"],
-  connectSrc: ["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434'],
+  connectSrc: [
+    "'self'",
+    'http://localhost:11434',
+    'http://127.0.0.1:11434',
+    'https://openrouter.ai',
+  ],
   imgSrc: ["'self'", 'data:'],
   // data:: Vite inlines font subsets under its asset-inline threshold as
   // data: URIs inside the CSS; data: fonts carry no exfiltration channel.
