@@ -46,6 +46,8 @@ describe('CSP contract with apps/web', () => {
   it('keeps CSP pinned to the reviewed policy', () => {
     expect(CSP_DIRECTIVES.defaultSrc).toEqual(["'none'"]);
     expect(CSP_DIRECTIVES.connectSrc).toEqual(["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434']);
+    // data: fonts — Vite inlines small font subsets into the CSS as data: URIs.
+    expect(CSP_DIRECTIVES.fontSrc).toEqual(["'self'", 'data:']);
     expect(CSP_DIRECTIVES.frameAncestors).toEqual(["'none'"]);
     expect(CSP_DIRECTIVES.objectSrc).toEqual(["'none'"]);
   });

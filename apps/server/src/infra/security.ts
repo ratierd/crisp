@@ -29,7 +29,9 @@ export const CSP_DIRECTIVES = {
   styleSrcAttr: ["'unsafe-inline'"],
   connectSrc: ["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434'],
   imgSrc: ["'self'", 'data:'],
-  fontSrc: ["'self'"],
+  // data:: Vite inlines font subsets under its asset-inline threshold as
+  // data: URIs inside the CSS; data: fonts carry no exfiltration channel.
+  fontSrc: ["'self'", 'data:'],
   baseUri: ["'none'"],
   formAction: ["'self'"],
   frameAncestors: ["'none'"],
