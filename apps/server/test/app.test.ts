@@ -190,10 +190,12 @@ describe('POST /api/chat', () => {
     expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant']);
     expect(messages[0]!.id).toBe('tour-ctx-1');
 
-    // the title derives from the first user turn, never from the Tour Context
+    // auto-titling still fires on the first exchange (the Tour Context does
+    // not count), and the title never derives from the context itself
     const owner = conversations.owners.get('conv-tour')!;
-    const conversation = await conversations.get('conv-tour', owner);
-    expect(conversation!.title).not.toContain('inside Crisp');
+    await waitFor(
+      async () => (await conversations.get('conv-tour', owner))!.title === 'Crisp feature tour',
+    );
 
     // the follow-up resends the transcript; the context is not re-persisted
     const second = await request('/api/chat', {

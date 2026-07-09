@@ -145,16 +145,18 @@ textarea {
 .spacer {
   flex: 1;
 }
+/* sized like ProvenanceBadge — a quiet peer of the "local" pill */
 .tour {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border: 1px solid var(--border);
   background: transparent;
   border-radius: 999px;
-  padding: 5px 12px;
-  font-family: var(--font-ui);
-  font-size: 12px;
+  padding: 2px 7px;
+  font-family: var(--font-meta);
+  font-size: 9px;
+  letter-spacing: 0.06em;
   color: var(--text-3);
 }
 .tour:hover {
@@ -167,8 +169,8 @@ textarea {
   background: var(--accent-subtle, transparent);
 }
 .tour-dot {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: currentcolor;
   opacity: 0.35;

@@ -84,8 +84,11 @@ export class RunManager {
     apiKey?: string,
   ): Promise<void> {
     const conversation = await this.conversations.get(conversationId, owner);
-    if (!conversation || conversation.messages.length !== 2) return;
-    const [user, assistant] = conversation.messages;
+    if (!conversation) return;
+    // The Tour Context (ADR-0009) doesn't count toward the first exchange.
+    const flow = conversation.messages.filter((message) => message.role !== 'system');
+    if (flow.length !== 2) return;
+    const [user, assistant] = flow;
     if (user?.role !== 'user' || assistant?.role !== 'assistant') return;
     const text = (message: Message) => message.parts.map((p) => p.content).join('');
     await this.titles

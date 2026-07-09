@@ -99,19 +99,19 @@ bun dev                     # server :3000 + vite :5173
 Everything is optional (`bun setup` fills these interactively; see
 `.env.example` for the manual route):
 
-| var                  | default                  | effect                                                           |
-| -------------------- | ------------------------ | ---------------------------------------------------------------- |
-| `ANTHROPIC_API_KEY`  | —                        | enables Claude models in the picker                              |
-| `OPENAI_API_KEY`     | —                        | enables GPT models in the picker                                 |
-| `OPENROUTER_API_KEY` | —                        | enables OpenRouter models in the picker                          |
-| `LANGSMITH_API_KEY`  | —                        | traces every Run to LangSmith; feedback lands on traces          |
-| `LANGSMITH_PROJECT`  | `crisp`                  | LangSmith project name                                           |
-| `LANGSMITH_ENDPOINT` | US host                  | set `https://eu.api.smith.langchain.com` for EU accounts         |
-| `REDIS_URL`          | `redis://localhost:6379` | run-stream buffer (required)                                     |
-| `DB_PATH`            | `./data/crisp.sqlite`    | conversation storage                                             |
-| `PORT`               | `3000`                   | API port                                                         |
+| var                  | default                  | effect                                                                 |
+| -------------------- | ------------------------ | ---------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | —                        | enables Claude models in the picker                                    |
+| `OPENAI_API_KEY`     | —                        | enables GPT models in the picker                                       |
+| `OPENROUTER_API_KEY` | —                        | enables OpenRouter models in the picker                                |
+| `LANGSMITH_API_KEY`  | —                        | traces every Run to LangSmith; feedback lands on traces                |
+| `LANGSMITH_PROJECT`  | `crisp`                  | LangSmith project name                                                 |
+| `LANGSMITH_ENDPOINT` | US host                  | set `https://eu.api.smith.langchain.com` for EU accounts               |
+| `REDIS_URL`          | `redis://localhost:6379` | run-stream buffer (required)                                           |
+| `DB_PATH`            | `./data/crisp.sqlite`    | conversation storage                                                   |
+| `PORT`               | `3000`                   | API port                                                               |
 | `CRISP_DEMO`         | on                       | `off` hides the zero-key Demo model (forces visitors onto real models) |
-| `CRISP_RATE_LIMIT`   | on                       | `off` disables per-IP rate limiting (e2e, local load testing)    |
+| `CRISP_RATE_LIMIT`   | on                       | `off` disables per-IP rate limiting (e2e, local load testing)          |
 
 ## What it does
 
