@@ -13,11 +13,11 @@ model answers them from a canned script; any real model answers them from a
 briefing injected as the conversation's first message while the composer's
 **Tour** toggle is on (ADR-0009).
 
-**Hosted**: <https://crisp-production-0b9e.up.railway.app> — connect OpenRouter
-in one click (OAuth, no key to paste), paste your own provider key in the
-picker (BYOK), or connect [your own Ollama](docs/byo-ollama.md). The hosted
-instance hides the Demo model (`CRISP_DEMO=off`); locally it's on by default,
-so everything below works with zero keys.
+**Hosted**: <https://crisp-production-0b9e.up.railway.app> — the zero-key
+Demo model is on, so the Tour works the moment the page loads. For real
+models, connect OpenRouter in one click (OAuth, no key to paste), paste your
+own provider key in the picker (BYOK), or connect
+[your own Ollama](docs/byo-ollama.md).
 
 ![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/readme.png)
 
@@ -110,7 +110,7 @@ Everything is optional (`bun setup` fills these interactively; see
 | `REDIS_URL`          | `redis://localhost:6379` | run-stream buffer (required)                                     |
 | `DB_PATH`            | `./data/crisp.sqlite`    | conversation storage                                             |
 | `PORT`               | `3000`                   | API port                                                         |
-| `CRISP_DEMO`         | on                       | `off` hides the zero-key Demo model (set on the hosted instance) |
+| `CRISP_DEMO`         | on                       | `off` hides the zero-key Demo model (forces visitors onto real models) |
 | `CRISP_RATE_LIMIT`   | on                       | `off` disables per-IP rate limiting (e2e, local load testing)    |
 
 ## What it does
