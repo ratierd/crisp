@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
+import { highlightCode } from '../lib/highlight';
 
 const props = defineProps<{ code: string; lang: string }>();
 
@@ -9,12 +10,7 @@ const copied = ref(false);
 watchEffect(async () => {
   const { code, lang } = props;
   try {
-    const { codeToHtml } = await import('shiki');
-    html.value = await codeToHtml(code, {
-      lang: lang || 'text',
-      themes: { light: 'min-light', dark: 'min-dark' },
-      defaultColor: false,
-    });
+    html.value = await highlightCode(code, lang);
   } catch {
     html.value = null; // unknown language → plain fallback below
   }
