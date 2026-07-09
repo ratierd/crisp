@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chatRequestSchema } from '@crisp/runs/contracts';
 import { ChatClient, fetchServerSentEvents, uiMessagesToWire } from './index';
 import type { ConnectConnectionAdapter, StreamChunk, UIMessage } from './index';
 
@@ -54,7 +53,10 @@ describe('fetchServerSentEvents', () => {
       { status: 200 },
     );
 
-  it('POSTs an AG-UI RunAgentInput that satisfies chatRequestSchema', async () => {
+  // NB: the pin that this body parses against the server's chatRequestSchema
+  // lives in apps/server/test/client-server-contract.test.ts — the composition
+  // root is the only place allowed to see both sides of the wire.
+  it('POSTs an AG-UI RunAgentInput with the wire fields the server reads', async () => {
     const mock = vi.fn(async () => sseResponse({ type: 'RUN_FINISHED' }));
     vi.stubGlobal('fetch', mock);
 
@@ -70,8 +72,6 @@ describe('fetchServerSentEvents', () => {
     expect(url).toBe('/api/chat');
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    const parsed = chatRequestSchema.safeParse(body);
-    expect(parsed.success).toBe(true);
     expect(body).toMatchObject({
       threadId: 'conv-1',
       state: {},
