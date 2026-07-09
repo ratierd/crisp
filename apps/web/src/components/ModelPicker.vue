@@ -249,6 +249,11 @@ onBeforeUnmount(() => {
   bottom: calc(100% + 8px);
   left: 0;
   width: min(360px, 100%);
+  /* never taller than the space above the trigger — scroll internally instead
+     of running off the top of the viewport */
+  max-height: min(calc(100vh - 88px), 520px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
