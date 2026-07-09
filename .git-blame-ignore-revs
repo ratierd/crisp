@@ -1,0 +1,4 @@
+# Style-only commits — hide from git blame.
+# GitHub picks this file up automatically; locally, enable with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+ee5c2d5f223544894d6b7003797a263258ad81e2  # style: one-time oxfmt reformat of the whole repo

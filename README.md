@@ -81,6 +81,8 @@ bun dev                     # server :3000 + vite :5173
 | `bun dev`       | dev servers (Hono on :3000, Vite on :5173)                                                  |
 | `bun run test`  | unit + integration tests (Vitest — `run` matters: bare `bun test` invokes Bun's own runner) |
 | `bun typecheck` | strict TS across all packages                                                               |
+| `bun lint`      | oxlint: correctness rules + Nx module boundaries (the hexagon is enforced, not convention)  |
+| `bun format`    | oxfmt over the whole repo (`bun format:check` is the CI gate)                               |
 | `bun e2e`       | Playwright smoke spec against the Demo model¹                                               |
 
 ¹ needs Redis running; on NixOS point it at a system browser:
