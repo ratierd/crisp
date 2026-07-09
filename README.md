@@ -258,3 +258,7 @@ Other tradeoffs, honestly:
 - Virtualized transcript for very long conversations.
 - A second `RunStreamStore` adapter (in-process) to drop the Redis requirement
   for single-instance deployments.
+- BYO-run resilience: today a local-model run dies on reload _and_ on
+  conversation switch (the run lives in the page, ADR-0004). First step would
+  be an app-level browser run manager so streaming survives in-app navigation,
+  with a `pagehide` beacon salvaging partial text across reloads.

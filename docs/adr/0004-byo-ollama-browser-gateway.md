@@ -8,4 +8,6 @@ Amended (2026-07-08): the server-side Ollama path (daemon discovery via `OLLAMA_
 
 Trust boundary: a reported BYO run is unauthenticated client input — the server persists what the browser _claims_ happened. Accepted deliberately (the alternative is proxying local models through the server, which this ADR exists to reject), and bounded: runIds are deduped, the body cap limits payload size, and the endpoint sits behind the per-IP rate limit.
 
+Amended (2026-07-09): the no-resume trade was revisited on request and kept, with eyes open to its full width: the run's executor is the page's component tree (`useChat` aborts on scope dispose), so a BYO run dies on conversation switch, not just reload. Three mitigations were designed and rejected: an app-level browser run manager with reload salvage via a `pagehide` beacon (survives in-app navigation, still dies on reload), a Service Worker executor (true reload resume, rejected for SW lifetime caps and per-browser Local Network Access variance — alpha-grade plumbing in the riskiest code path), and salvage-only. All put complexity into stream handling for a gain the Demo-scoped product doesn't need; the app-level run manager is the first one to build if this is ever revisited.
+
 Status: accepted
