@@ -6,6 +6,7 @@
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "test": "vitest run",
+    "test-contract": "bun test ./test/conversation-repository.contract.bun.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

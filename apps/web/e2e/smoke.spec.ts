@@ -21,7 +21,7 @@ test.describe('Crisp smoke (Demo model)', () => {
     await expect(page.locator('.code-block-copy').first()).toHaveText('copy');
 
     // completion: latency badge appears, composer back to send
-    await expect(page.getByText(/tok\/s/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/chunks\/s/)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
 
     // conversation shows up in the sidebar with a title
@@ -50,7 +50,7 @@ test.describe('Crisp smoke (Demo model)', () => {
     // history is back and the live stream keeps writing to completion
     await expect(page.locator('.user-message')).toContainText('walk me through markdown');
     await expect(page.locator('.code-block')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/tok\/s/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/chunks\/s/)).toBeVisible({ timeout: 20_000 });
   });
 
   test('stop mid-stream keeps the partial with a regenerate affordance', async ({ page }) => {
