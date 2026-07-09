@@ -2,18 +2,18 @@
 
 ![CI](https://github.com/ratierd/crisp/actions/workflows/ci.yml/badge.svg)
 
-The repo ships its CI workflow; push to GitHub and the badge goes green (add a `RAILWAY_TOKEN` secret to enable the infra drift gate).
-
 A small, polished multi-AI chat client. Vue 3 SPA talking to a Hono API on Bun,
 streaming LLM responses over the [AG-UI protocol](https://docs.ag-ui.com/) —
 from remote providers (Anthropic, OpenAI, OpenRouter) and local ones (Ollama),
 plus a zero-key **Demo** model so the app works the moment it starts.
 
-**Hosted**: <https://crisp-production-0b9e.up.railway.app> — the Demo model
-works instantly, paste your own provider key in the picker for real models
-(BYOK), or connect [your own Ollama](docs/byo-ollama.md).
+**Hosted**: <https://crisp-production-0b9e.up.railway.app> — connect OpenRouter
+in one click (OAuth, no key to paste), paste your own provider key in the
+picker (BYOK), or connect [your own Ollama](docs/byo-ollama.md). The hosted
+instance hides the Demo model (`CRISP_DEMO=off`); locally it's on by default,
+so everything below works with zero keys.
 
-![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/prototype.html)
+![quiet editorial UI: typography-first, no chat bubbles, one accent color](docs/design/readme.png)
 
 ## Run it
 
@@ -38,7 +38,10 @@ is optional. Inline env vars work too:
 
 Remote models are also **BYOK**: a visitor pastes their own Anthropic, OpenAI,
 or OpenRouter key into the model picker and chats on their own account
-(ADR-0006). The key stays in that browser's localStorage, rides each request
+(ADR-0006). The fastest path is the picker's **Connect with OpenRouter**
+button — an OAuth (PKCE) round-trip that mints a user-scoped key in one click,
+unlocking Claude, GPT, Gemini, and DeepSeek through one account, no provider
+console visit needed. The key stays in that browser's localStorage, rides each request
 next to the model id, is used for that Run, and is never stored or logged
 server-side.
 
@@ -76,7 +79,7 @@ bun dev                     # server :3000 + vite :5173
 | --- | --- |
 | `bun setup` | interactive wizard: keys → `.env` (idempotent, secrets masked), pull a local model |
 | `bun dev` | dev servers (Hono on :3000, Vite on :5173) |
-| `bun test` | unit + integration tests (Vitest) |
+| `bun run test` | unit + integration tests (Vitest — `run` matters: bare `bun test` invokes Bun's own runner) |
 | `bun typecheck` | strict TS across all packages |
 | `bun e2e` | Playwright smoke spec against the Demo model¹ |
 
@@ -99,6 +102,8 @@ Everything is optional (`bun setup` fills these interactively; see
 | `REDIS_URL` | `redis://localhost:6379` | run-stream buffer (required) |
 | `DB_PATH` | `./data/crisp.sqlite` | conversation storage |
 | `PORT` | `3000` | API port |
+| `CRISP_DEMO` | on | `off` hides the zero-key Demo model (set on the hosted instance) |
+| `CRISP_RATE_LIMIT` | on | `off` disables per-IP rate limiting (e2e, local load testing) |
 
 ## What it does
 
@@ -109,8 +114,9 @@ Everything is optional (`bun setup` fills these interactively; see
   explaining why (missing key), and the picker shows the one-line command
   that connects your own Ollama.
 - **BYOK — bring your own key**: paste your Anthropic / OpenAI / OpenRouter
-  key in the picker and the disabled models light up; your chats (and their
-  auto-titles) bill your account. Keys live in your browser only, travel
+  key in the picker — or click **Connect with OpenRouter** to mint one via
+  OAuth in a single click — and the disabled models light up; your chats (and
+  their auto-titles) bill your account. Keys live in your browser only, travel
   per-request, and are never persisted or logged server-side (ADR-0006).
 - **Mid-stream resume**: refresh the page while the model is answering and the
   stream reattaches and keeps writing. Runs execute detached from the HTTP
@@ -236,9 +242,10 @@ Other tradeoffs, honestly:
 - **Tracing** (Vitest): the LangSmith gateway decorator against a fake client —
   completed/stopped/failed/consumer-break outcomes, usage mapping, and that a
   dead LangSmith never disturbs the stream.
-- **E2E** (Playwright, one local spec): empty state → streamed markdown →
-  conversation listed; error card; stop/regenerate; and refresh-mid-run resume.
-  Deterministic because it runs on the Demo model.
+- **E2E** (Playwright): smoke (empty state → streamed markdown → conversation
+  listed → latency footer), chat flows (stop → regenerate, error card → retry,
+  refresh-mid-stream resume), and honest-health degradation. Deterministic
+  because they run on the Demo model.
 
 ## With more time
 
