@@ -27,7 +27,7 @@ Where a Model executes: `local` (the user's own machine — their Ollama, always
 _Avoid_: Provider type, origin, self-hosted
 
 **BYOK**:
-Bring-your-own-key: a user-supplied provider API key that rides a chat request, makes an env-unavailable remote Model usable for that Run, and is billed to the user's own account. Held in the user's browser, passed through the server per-request, never stored there.
+Bring-your-own-key: a user-supplied provider API key that rides a chat request, makes an env-unavailable remote Model usable for that Run, and is billed to the user's own account. Acquired by pasting from the provider's console or minted in one click via OpenRouter's connect flow. Held in the user's browser, passed through the server per-request, never stored there.
 _Avoid_: User token, credential, session key
 
 **ModelGateway**:

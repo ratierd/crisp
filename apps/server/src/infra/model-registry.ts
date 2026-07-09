@@ -49,6 +49,11 @@ const CATALOGS: ProviderCatalog[] = [
     envKey: (env) => env.openrouterApiKey,
     models: [
       { name: 'openrouter/auto', displayName: 'Auto Router' },
+      // Claude/GPT appear here *as well as* directly above: the one-click
+      // OpenRouter connect (OAuth PKCE) then unlocks frontier models without
+      // an Anthropic/OpenAI key.
+      { name: 'anthropic/claude-sonnet-4.6', displayName: 'Claude Sonnet 4.6 (via OpenRouter)' },
+      { name: 'openai/gpt-5.2', displayName: 'GPT-5.2 (via OpenRouter)' },
       { name: 'google/gemini-2.5-flash', displayName: 'Gemini 2.5 Flash' },
       { name: 'deepseek/deepseek-chat', displayName: 'DeepSeek V3' },
     ],

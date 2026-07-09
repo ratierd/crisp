@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import ChatView from './components/ChatView.vue';
 import SidebarPanel from './components/SidebarPanel.vue';
 import TopBar from './components/TopBar.vue';
+import { completeOpenRouterConnect } from './lib/openrouter-oauth';
 import { useAppStore } from './stores/app';
 
 const store = useAppStore();
@@ -29,6 +30,10 @@ let observer: ResizeObserver | null = null;
 
 onMounted(() => {
   store.applyTheme();
+  // an OpenRouter connect redirect lands back here with ?code=… — finish it
+  void completeOpenRouterConnect().then((key) => {
+    if (key) store.setApiKey('openrouter', key);
+  });
   void store.loadModels();
   void store.loadConversations();
   document.addEventListener('keydown', onKeydown);

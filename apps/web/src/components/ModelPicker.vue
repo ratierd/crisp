@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { byoConnectCommand } from '../lib/byo';
 import { KEYED_PROVIDERS } from '../lib/keys';
+import { startOpenRouterConnect } from '../lib/openrouter-oauth';
 import { useAppStore } from '../stores/app';
 import ProvenanceBadge from './ProvenanceBadge.vue';
 
@@ -68,6 +69,7 @@ const commitKey = (provider: (typeof KEYED_PROVIDERS)[number]['id']) => {
   store.setApiKey(provider, keyDrafts[provider] ?? '');
   keyDrafts[provider] = '';
 };
+const connectOpenRouter = () => void startOpenRouterConnect();
 
 const pick = (id: string, available: boolean) => {
   if (!available) return;
@@ -157,6 +159,14 @@ onBeforeUnmount(() => {
           <div class="keys-hint">
             Chat on your own account — keys stay in this browser and ride only your own requests.
           </div>
+          <button
+            v-if="!store.apiKeys.openrouter"
+            class="or-connect"
+            type="button"
+            @click="connectOpenRouter"
+          >
+            Connect with OpenRouter → <span class="or-connect-sub">one click, no key to paste</span>
+          </button>
           <div v-for="provider in KEYED_PROVIDERS" :key="provider.id" class="key-row">
             <a class="key-label" :href="provider.consoleUrl" target="_blank" rel="noreferrer">{{
               provider.label
@@ -314,6 +324,29 @@ onBeforeUnmount(() => {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-3);
+}
+.or-connect {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 0 10px 8px;
+  padding: 7px 10px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+.or-connect:hover {
+  border-color: var(--accent);
+}
+.or-connect-sub {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 11px;
 }
 .key-row {
   display: flex;

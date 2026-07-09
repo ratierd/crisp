@@ -98,6 +98,9 @@ describe('GET /api/models', () => {
     expect(open.every((m) => m.available === true)).toBe(true);
     // OpenRouter model names keep their vendor/model form after the provider segment
     expect(open.some((m) => m.id === 'openrouter/deepseek/deepseek-chat')).toBe(true);
+    // frontier models ride the same OpenRouter key, so the one-click connect unlocks them
+    expect(open.some((m) => m.id === 'openrouter/anthropic/claude-sonnet-4.6')).toBe(true);
+    expect(open.some((m) => m.id === 'openrouter/openai/gpt-5.2')).toBe(true);
   });
 });
 
