@@ -249,11 +249,12 @@ onBeforeUnmount(() => {
   bottom: calc(100% + 8px);
   left: 0;
   width: min(360px, 100%);
-  /* never taller than the space above the trigger — scroll internally instead
-     of running off the top of the viewport */
+  /* never taller than the space above the trigger. The popover itself doesn't
+     scroll — only the model list does — so the keys and Ollama sections below
+     stay pinned and visible. */
+  display: flex;
+  flex-direction: column;
   max-height: min(calc(100vh - 88px), 520px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
@@ -270,6 +271,19 @@ onBeforeUnmount(() => {
 }
 .listbox {
   outline: none; /* the active option carries the highlight instead */
+  /* the only scrolling region — the model list gives up space first so the
+     keys/Ollama sections below stay visible */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* the MODEL label and the keys/Ollama sections keep their natural height so
+   they stay pinned while the list scrolls */
+.model-popover > .section,
+.keys,
+.byo {
+  flex: 0 0 auto;
 }
 .row {
   padding: 9px 10px;
