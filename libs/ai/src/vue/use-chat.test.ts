@@ -3,7 +3,9 @@ import { effectScope } from 'vue';
 import { useChat } from './index';
 import type { ConnectConnectionAdapter, StreamChunk, UIMessage } from './index';
 
-const connectionOf = (chunks: StreamChunk[]): ConnectConnectionAdapter & { data: Array<Record<string, unknown> | undefined> } => {
+const connectionOf = (
+  chunks: StreamChunk[],
+): ConnectConnectionAdapter & { data: Array<Record<string, unknown> | undefined> } => {
   const data: Array<Record<string, unknown> | undefined> = [];
   return {
     data,
@@ -56,7 +58,12 @@ describe('useChat', () => {
     const chat = useChat({ connection: connectionOf([]) });
     const history: UIMessage[] = [
       { id: 'u1', role: 'user', parts: [{ type: 'text', content: 'q' }], createdAt: new Date() },
-      { id: 'a1', role: 'assistant', parts: [{ type: 'text', content: 'a' }], createdAt: new Date() },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [{ type: 'text', content: 'a' }],
+        createdAt: new Date(),
+      },
     ];
     chat.setMessages(history);
     expect(chat.messages.value).toEqual(history);

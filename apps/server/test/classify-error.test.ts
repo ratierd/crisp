@@ -27,7 +27,11 @@ describe('classifyProviderError', () => {
     // rate_limited — throttling and quota exhaustion
     { message: '429 Too Many Requests', expected: 'rate_limited' },
     { message: 'Rate limit reached for gpt-4o in organization org-x', expected: 'rate_limited' },
-    { message: 'You exceeded your current quota, please check your plan and billing details.', code: 'insufficient_quota', expected: 'rate_limited' },
+    {
+      message: 'You exceeded your current quota, please check your plan and billing details.',
+      code: 'insufficient_quota',
+      expected: 'rate_limited',
+    },
     // Anthropic 529
     { message: 'Overloaded', code: 'overloaded_error', expected: 'rate_limited' },
     { message: 'RATE LIMIT EXCEEDED', expected: 'rate_limited' }, // case-folded
@@ -42,7 +46,10 @@ describe('classifyProviderError', () => {
     { message: '500 Internal Server Error', expected: 'provider_unavailable' },
     { message: '503 Service Unavailable', expected: 'provider_unavailable' },
     { message: '504 Gateway Timeout', expected: 'provider_unavailable' },
-    { message: 'Client network socket disconnected before secure TLS connection was established', expected: 'provider_unavailable' },
+    {
+      message: 'Client network socket disconnected before secure TLS connection was established',
+      expected: 'provider_unavailable',
+    },
     { message: 'the daemon is not running', expected: 'provider_unavailable' },
 
     // unknown — anything unrecognized falls through, never throws

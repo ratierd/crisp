@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { FakeConversationRepository } from '../testing/fakes';
-import { ConversationService, deriveFallbackTitle, sanitizeGeneratedTitle } from './conversation-service';
+import {
+  ConversationService,
+  deriveFallbackTitle,
+  sanitizeGeneratedTitle,
+} from './conversation-service';
 
 describe('deriveFallbackTitle', () => {
   it('keeps short messages as-is', () => {
@@ -41,7 +45,10 @@ describe('ConversationService', () => {
   it('creates a conversation titled from the first message', async () => {
     const repo = new FakeConversationRepository();
     const service = new ConversationService({ conversations: repo });
-    const conversation = await service.create('Why does serif type read better in long form?', 'visitor-1');
+    const conversation = await service.create(
+      'Why does serif type read better in long form?',
+      'visitor-1',
+    );
     expect(conversation.title).toBe('Why does serif type read better in long for…');
     expect(await service.get(conversation.id, 'visitor-1')).not.toBeNull();
   });

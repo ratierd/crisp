@@ -1,5 +1,11 @@
 import type { Message, Model } from '@crisp/contracts';
-import type { ConversationService, GatewayMessage, RunService, RunStreamStore, TitleService } from '@crisp/domain';
+import type {
+  ConversationService,
+  GatewayMessage,
+  RunService,
+  RunStreamStore,
+  TitleService,
+} from '@crisp/domain';
 
 export interface StartInput {
   conversationId: string;
@@ -57,7 +63,8 @@ export class RunManager {
           console.warn(`run ${runId}: failed to release conversation claim`, error);
         });
       }
-      if (completed) await this.maybeGenerateTitle(input.conversationId, input.owner, input.model, input.apiKey);
+      if (completed)
+        await this.maybeGenerateTitle(input.conversationId, input.owner, input.model, input.apiKey);
     })();
   }
 
@@ -74,14 +81,21 @@ export class RunManager {
   }
 
   /** Auto-title after the first exchange, with the Model that answered. */
-  private async maybeGenerateTitle(conversationId: string, owner: string, model: Model, apiKey?: string): Promise<void> {
+  private async maybeGenerateTitle(
+    conversationId: string,
+    owner: string,
+    model: Model,
+    apiKey?: string,
+  ): Promise<void> {
     const conversation = await this.conversations.get(conversationId, owner);
     if (!conversation || conversation.messages.length !== 2) return;
     const [user, assistant] = conversation.messages;
     if (user?.role !== 'user' || assistant?.role !== 'assistant') return;
     const text = (message: Message) => message.parts.map((p) => p.content).join('');
-    await this.titles.generate(conversationId, model, text(user), text(assistant), apiKey).catch((error) => {
-      console.error(`title generation failed for ${conversationId}`, error);
-    });
+    await this.titles
+      .generate(conversationId, model, text(user), text(assistant), apiKey)
+      .catch((error) => {
+        console.error(`title generation failed for ${conversationId}`, error);
+      });
   }
 }

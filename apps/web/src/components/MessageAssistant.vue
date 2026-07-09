@@ -13,7 +13,10 @@ const props = defineProps<{
   runId?: string | null;
   feedback?: Feedback | null;
 }>();
-const emit = defineEmits<{ regenerate: []; feedback: [score: 'up' | 'down' | null, comment?: string] }>();
+const emit = defineEmits<{
+  regenerate: [];
+  feedback: [score: 'up' | 'down' | null, comment?: string];
+}>();
 
 const formatStats = (stats: RunStats, modelName?: string | null) => {
   // messages persisted before durationMs existed show just the model name
@@ -52,7 +55,11 @@ const submitNote = () => {
 <template>
   <div class="assistant">
     <MarkdownBlocks :source="source" :caret="streaming" />
-    <div v-if="!streaming && (stoppedEarly || stats || runId)" class="meta" :class="{ stopped: stoppedEarly }">
+    <div
+      v-if="!streaming && (stoppedEarly || stats || runId)"
+      class="meta"
+      :class="{ stopped: stoppedEarly }"
+    >
       <template v-if="stoppedEarly">
         <span>▪ stopped early</span>
         <button type="button" class="regenerate" @click="$emit('regenerate')">regenerate</button>

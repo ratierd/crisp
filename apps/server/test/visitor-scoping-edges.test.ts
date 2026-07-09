@@ -14,7 +14,9 @@ import { AiModelGateway } from '../src/infra/ai-gateway';
  * additionally owner-scoped).
  */
 type Requester = (path: string, init?: RequestInit) => Promise<Response>;
-const withCookies = (app: { request: (path: any, init?: any) => Response | Promise<Response> }): Requester => {
+const withCookies = (app: {
+  request: (path: any, init?: any) => Response | Promise<Response>;
+}): Requester => {
   let cookie: string | undefined;
   return async (path, init = {}) => {
     const headers = new Headers(init.headers);
@@ -42,12 +44,18 @@ const makeApp = (runStreams: RunStreamStore = new FakeRunStreamStore()) => {
 const chatBody = (conversationId: string, text: string) => ({
   threadId: conversationId,
   runId: 'client-chosen-run-id',
-  messages: [{ id: `u-${text.slice(0, 8)}`, role: 'user', parts: [{ type: 'text', content: text }] }],
+  messages: [
+    { id: `u-${text.slice(0, 8)}`, role: 'user', parts: [{ type: 'text', content: text }] },
+  ],
   forwardedProps: { modelId: 'demo/demo' },
 });
 
 const post = (request: Requester, path: string, body: unknown) =>
-  request(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  request(path, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 
 describe('POST /api/chat against a foreign conversation id', () => {
   it('409s without leaking or mutating, and releases the claim so the owner is unaffected', async () => {
@@ -103,7 +111,9 @@ describe('POST /api/conversations/:id/byo-runs validation', () => {
     });
     expect(wrongPrefix.status).toBe(400);
 
-    expect((await post(request, '/api/conversations/c1/byo-runs', { nope: true })).status).toBe(400);
+    expect((await post(request, '/api/conversations/c1/byo-runs', { nope: true })).status).toBe(
+      400,
+    );
     const junk = await request('/api/conversations/c1/byo-runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

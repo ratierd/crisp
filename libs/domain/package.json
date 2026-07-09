@@ -1,9 +1,6 @@
 {
   "name": "@crisp/domain",
   "private": true,
-  "nx": {
-    "tags": ["scope:domain"]
-  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -18,5 +15,10 @@
   },
   "devDependencies": {
     "vitest": "4.1.10"
+  },
+  "nx": {
+    "tags": [
+      "scope:domain"
+    ]
   }
 }

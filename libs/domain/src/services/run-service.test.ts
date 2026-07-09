@@ -1,7 +1,12 @@
 import type { Message, Model } from '@crisp/contracts';
 import { describe, expect, it } from 'vitest';
 import type { RunEvent } from '../ports';
-import { FakeConversationRepository, FakeModelGateway, FakeRunStreamStore, defaultRunEvents } from '../testing/fakes';
+import {
+  FakeConversationRepository,
+  FakeModelGateway,
+  FakeRunStreamStore,
+  defaultRunEvents,
+} from '../testing/fakes';
 import { RunService } from './run-service';
 
 const demoModel: Model = {
@@ -34,7 +39,9 @@ const collect = async (events: AsyncIterable<RunEvent>) => {
 
 describe('RunService.execute', () => {
   it('streams gateway events, tees them into the store, and persists both messages', async () => {
-    const gateway = new FakeModelGateway({ events: defaultRunEvents('r', 'Hello streaming world') });
+    const gateway = new FakeModelGateway({
+      events: defaultRunEvents('r', 'Hello streaming world'),
+    });
     const { conversations, runStreams, service } = setup(gateway);
 
     const seen = await collect(
@@ -81,8 +88,13 @@ describe('RunService.execute', () => {
     const { conversations, runStreams, service } = setup(gateway);
 
     const seen = await collect(
-      service.execute({ conversationId: 'c1',
-        runId: 'run-1', model: demoModel, history: [], userMessage: userMessage('hi') }),
+      service.execute({
+        conversationId: 'c1',
+        runId: 'run-1',
+        model: demoModel,
+        history: [],
+        userMessage: userMessage('hi'),
+      }),
     );
 
     expect(seen.at(-1)!.type).toBe('RUN_ERROR');
@@ -99,8 +111,9 @@ describe('RunService.execute', () => {
     const gateway = new FakeModelGateway({ events });
     const { service } = setup(gateway);
 
-    const seen = await collect(service.execute({ conversationId: 'c1',
-        runId: 'run-1', model: demoModel, history: [] }));
+    const seen = await collect(
+      service.execute({ conversationId: 'c1', runId: 'run-1', model: demoModel, history: [] }),
+    );
     expect(seen).toHaveLength(1);
   });
 
@@ -113,8 +126,13 @@ describe('RunService.execute', () => {
     const { conversations, runStreams, service } = setup(gateway);
 
     const seen = await collect(
-      service.execute({ conversationId: 'c1',
-        runId: 'run-1', model: demoModel, history: [], userMessage: userMessage('hi') }),
+      service.execute({
+        conversationId: 'c1',
+        runId: 'run-1',
+        model: demoModel,
+        history: [],
+        userMessage: userMessage('hi'),
+      }),
     );
 
     const last = seen.at(-1)!;
@@ -163,7 +181,9 @@ describe('RunService.execute', () => {
   });
 
   it('persists the exchange even when the stream store dies mid-run', async () => {
-    const gateway = new FakeModelGateway({ events: defaultRunEvents('r', 'answer that must survive redis dying') });
+    const gateway = new FakeModelGateway({
+      events: defaultRunEvents('r', 'answer that must survive redis dying'),
+    });
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();
     // The store starts failing after the second event — a Redis outage mid-run.
@@ -199,7 +219,10 @@ describe('RunService.execute', () => {
   it('persists nothing extra when aborted before the first token', async () => {
     const controller = new AbortController();
     controller.abort();
-    const gateway = new FakeModelGateway({ events: defaultRunEvents('r', 'never seen'), delayMs: 2 });
+    const gateway = new FakeModelGateway({
+      events: defaultRunEvents('r', 'never seen'),
+      delayMs: 2,
+    });
     const { conversations, service } = setup(gateway);
 
     await collect(

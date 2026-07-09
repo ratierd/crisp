@@ -1,9 +1,6 @@
 {
   "name": "@crisp/contracts",
   "private": true,
-  "nx": {
-    "tags": ["scope:contracts"]
-  },
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -17,5 +14,10 @@
   },
   "devDependencies": {
     "vitest": "4.1.10"
+  },
+  "nx": {
+    "tags": [
+      "scope:contracts"
+    ]
   }
 }

@@ -117,7 +117,9 @@ describe('LangsmithTracingGateway', () => {
     };
     const gateway = new LangsmithTracingGateway(inner, client);
 
-    await expect(drain(gateway.startRun(options({ signal: controller.signal })))).rejects.toThrow('stopped');
+    await expect(drain(gateway.startRun(options({ signal: controller.signal })))).rejects.toThrow(
+      'stopped',
+    );
 
     expect(updated).toHaveLength(1);
     const payload = updated[0]!.payload;
@@ -129,7 +131,10 @@ describe('LangsmithTracingGateway', () => {
 
   it('marks an unexpected provider throw failed', async () => {
     const { client, updated } = fakeClient();
-    const events: RunEvent[] = [{ type: 'RUN_STARTED' }, { type: 'TEXT_MESSAGE_CONTENT', delta: 'x' }];
+    const events: RunEvent[] = [
+      { type: 'RUN_STARTED' },
+      { type: 'TEXT_MESSAGE_CONTENT', delta: 'x' },
+    ];
     const gateway = new LangsmithTracingGateway(gatewayOf(events, 1), client);
 
     await expect(drain(gateway.startRun(options()))).rejects.toThrow('provider exploded');

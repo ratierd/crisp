@@ -16,10 +16,32 @@ afterEach(() => {
 describe('uiMessagesToWire', () => {
   it('keeps parts and adds the content string mirror the server reads', () => {
     const wire = uiMessagesToWire([
-      { id: 'm1', role: 'user', parts: [{ type: 'text', content: 'hel' }, { type: 'text', content: 'lo' }] },
-      { id: 'm2', role: 'assistant', parts: [{ type: 'thinking', content: 'hmm' }, { type: 'text', content: 'answer' }] },
+      {
+        id: 'm1',
+        role: 'user',
+        parts: [
+          { type: 'text', content: 'hel' },
+          { type: 'text', content: 'lo' },
+        ],
+      },
+      {
+        id: 'm2',
+        role: 'assistant',
+        parts: [
+          { type: 'thinking', content: 'hmm' },
+          { type: 'text', content: 'answer' },
+        ],
+      },
     ]);
-    expect(wire[0]).toMatchObject({ id: 'm1', role: 'user', content: 'hello', parts: [{ type: 'text', content: 'hel' }, { type: 'text', content: 'lo' }] });
+    expect(wire[0]).toMatchObject({
+      id: 'm1',
+      role: 'user',
+      content: 'hello',
+      parts: [
+        { type: 'text', content: 'hel' },
+        { type: 'text', content: 'lo' },
+      ],
+    });
     // only text parts feed the mirror — thinking stays in parts
     expect(wire[1]).toMatchObject({ id: 'm2', content: 'answer' });
   });
@@ -27,7 +49,10 @@ describe('uiMessagesToWire', () => {
 
 describe('fetchServerSentEvents', () => {
   const sseResponse = (...chunks: unknown[]) =>
-    new Response(chunks.map((c) => `data: ${typeof c === 'string' ? c : JSON.stringify(c)}\n\n`).join(''), { status: 200 });
+    new Response(
+      chunks.map((c) => `data: ${typeof c === 'string' ? c : JSON.stringify(c)}\n\n`).join(''),
+      { status: 200 },
+    );
 
   it('POSTs an AG-UI RunAgentInput that satisfies chatRequestSchema', async () => {
     const mock = vi.fn(async () => sseResponse({ type: 'RUN_FINISHED' }));
@@ -51,7 +76,9 @@ describe('fetchServerSentEvents', () => {
       threadId: 'conv-1',
       state: {},
       tools: [],
-      messages: [{ id: 'u1', role: 'user', content: 'hi', parts: [{ type: 'text', content: 'hi' }] }],
+      messages: [
+        { id: 'u1', role: 'user', content: 'hi', parts: [{ type: 'text', content: 'hi' }] },
+      ],
       forwardedProps: { modelId: 'demo/demo', apiKey: 'user-key' },
     });
     expect(typeof body.runId).toBe('string');
@@ -60,10 +87,21 @@ describe('fetchServerSentEvents', () => {
   it('yields every data frame as a parsed chunk and skips [DONE]', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => sseResponse({ type: 'RUN_STARTED', runId: 'r1' }, { type: 'TEXT_MESSAGE_CONTENT', delta: 'hi' }, '[DONE]')),
+      vi.fn(async () =>
+        sseResponse(
+          { type: 'RUN_STARTED', runId: 'r1' },
+          { type: 'TEXT_MESSAGE_CONTENT', delta: 'hi' },
+          '[DONE]',
+        ),
+      ),
     );
     const chunks: StreamChunk[] = [];
-    for await (const chunk of fetchServerSentEvents('/api/chat').connect([userMessage('u1', 'hi')], {}, undefined, { threadId: 't' })) {
+    for await (const chunk of fetchServerSentEvents('/api/chat').connect(
+      [userMessage('u1', 'hi')],
+      {},
+      undefined,
+      { threadId: 't' },
+    )) {
       chunks.push(chunk);
     }
     expect(chunks).toEqual([
@@ -73,16 +111,30 @@ describe('fetchServerSentEvents', () => {
   });
 
   it('throws on a non-2xx response', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"nope"}', { status: 409, statusText: 'Conflict' })));
-    const stream = fetchServerSentEvents('/api/chat').connect([userMessage('u1', 'hi')], {}, undefined, { threadId: 't' });
-    await expect((async () => { for await (const _ of stream) void _; })()).rejects.toThrow(/409/);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"error":"nope"}', { status: 409, statusText: 'Conflict' })),
+    );
+    const stream = fetchServerSentEvents('/api/chat').connect(
+      [userMessage('u1', 'hi')],
+      {},
+      undefined,
+      { threadId: 't' },
+    );
+    await expect(
+      (async () => {
+        for await (const _ of stream) void _;
+      })(),
+    ).rejects.toThrow(/409/);
   });
 });
 
 /** A controllable connection: scripts of chunks, or a hanging stream. */
 const connectionOf = (
   script: (messages: UIMessage[], data?: Record<string, unknown>) => StreamChunk[],
-): ConnectConnectionAdapter & { calls: Array<{ messages: UIMessage[]; data?: Record<string, unknown> }> } => {
+): ConnectConnectionAdapter & {
+  calls: Array<{ messages: UIMessage[]; data?: Record<string, unknown> }>;
+} => {
   const calls: Array<{ messages: UIMessage[]; data?: Record<string, unknown> }> = [];
   return {
     calls,
@@ -117,9 +169,22 @@ describe('ChatClient', () => {
 
     const messages = client.getMessages();
     expect(messages).toHaveLength(2);
-    expect(messages[0]).toMatchObject({ role: 'user', parts: [{ type: 'text', content: 'hi there' }] });
-    expect(messages[1]).toMatchObject({ id: 'a1', role: 'assistant', parts: [{ type: 'text', content: 'hello' }] });
-    expect(chunkTypes).toEqual(['RUN_STARTED', 'TEXT_MESSAGE_START', ...Array(5).fill('TEXT_MESSAGE_CONTENT'), 'TEXT_MESSAGE_END', 'RUN_FINISHED']);
+    expect(messages[0]).toMatchObject({
+      role: 'user',
+      parts: [{ type: 'text', content: 'hi there' }],
+    });
+    expect(messages[1]).toMatchObject({
+      id: 'a1',
+      role: 'assistant',
+      parts: [{ type: 'text', content: 'hello' }],
+    });
+    expect(chunkTypes).toEqual([
+      'RUN_STARTED',
+      'TEXT_MESSAGE_START',
+      ...Array(5).fill('TEXT_MESSAGE_CONTENT'),
+      'TEXT_MESSAGE_END',
+      'RUN_FINISHED',
+    ]);
     // the transcript grew incrementally (streaming renders live)
     expect(snapshots.length).toBeGreaterThan(3);
     expect(client.getIsLoading()).toBe(false);
@@ -175,7 +240,10 @@ describe('ChatClient', () => {
     expect(aborts).toEqual(['aborted']);
     expect(client.getIsLoading()).toBe(false);
     expect(errors).toEqual([]); // a stop is not an error
-    expect(client.getMessages().at(-1)).toMatchObject({ role: 'assistant', parts: [{ type: 'text', content: 'par' }] });
+    expect(client.getMessages().at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', content: 'par' }],
+    });
   });
 
   it('reload() drops the last answer and re-sends history ending at the user turn', async () => {
@@ -204,7 +272,10 @@ describe('ChatClient', () => {
     const connection = connectionOf(() => []);
     const snapshots: UIMessage[][] = [];
     const client = new ChatClient({ connection, onMessagesChange: (m) => snapshots.push(m) });
-    const history = [userMessage('u1', 'hi'), { id: 'a1', role: 'assistant' as const, parts: [{ type: 'text', content: 'yo' }] }];
+    const history = [
+      userMessage('u1', 'hi'),
+      { id: 'a1', role: 'assistant' as const, parts: [{ type: 'text', content: 'yo' }] },
+    ];
     client.setMessages(history);
     expect(client.getMessages()).toEqual(history);
     expect(snapshots).toHaveLength(1);
@@ -232,6 +303,9 @@ describe('ChatClient', () => {
     ]);
     const client = new ChatClient({ connection });
     await client.sendMessage('q');
-    expect(client.getMessages().at(-1)).toMatchObject({ role: 'assistant', parts: [{ type: 'text', content: 'hi' }] });
+    expect(client.getMessages().at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', content: 'hi' }],
+    });
   });
 });

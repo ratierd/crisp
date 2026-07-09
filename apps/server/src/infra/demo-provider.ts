@@ -64,7 +64,8 @@ const pickResponse = (lastUserText: string, systemText: string): string => {
 };
 
 /** Splits text into small chunks that feel like tokens when streamed. */
-const tokenize = (text: string): string[] => text.split(/(?<=\s)/).flatMap((w) => (w.length > 12 ? [w.slice(0, 8), w.slice(8)] : [w]));
+const tokenize = (text: string): string[] =>
+  text.split(/(?<=\s)/).flatMap((w) => (w.length > 12 ? [w.slice(0, 8), w.slice(8)] : [w]));
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -78,7 +79,10 @@ export interface DemoProviderOptions {
  * events. Messages containing `error:<kind>` trigger that error, so error
  * cards can be demonstrated (and tested) deterministically.
  */
-export async function* demoRun(options: StartRunOptions, config: DemoProviderOptions = {}): AsyncIterable<RunEvent> {
+export async function* demoRun(
+  options: StartRunOptions,
+  config: DemoProviderOptions = {},
+): AsyncIterable<RunEvent> {
   const delayMs = config.delayMs ?? 18;
   const lastUser = [...options.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
   const systemText = options.messages.find((m) => m.role === 'system')?.content ?? '';
@@ -112,7 +116,9 @@ export async function* demoRun(options: StartRunOptions, config: DemoProviderOpt
   yield { type: 'TEXT_MESSAGE_END', messageId, timestamp: Date.now() };
   // Fabricated-but-plausible usage (≈4 chars/token) so demo traces look like
   // real ones in observability tooling.
-  const promptTokens = Math.ceil(options.messages.reduce((total, m) => total + m.content.length, 0) / 4);
+  const promptTokens = Math.ceil(
+    options.messages.reduce((total, m) => total + m.content.length, 0) / 4,
+  );
   yield {
     type: 'RUN_FINISHED',
     runId,

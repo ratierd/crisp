@@ -98,10 +98,13 @@ export class RedisRunStreamStore implements RunStreamStore {
   async releaseActiveRun(conversationId: string, runId: string): Promise<void> {
     // Compare-and-delete: only the claim holder may release, so a stale
     // release can never evict a successor Run's claim.
-    await this.client.eval("if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0", {
-      keys: [activeKey(conversationId)],
-      arguments: [runId],
-    });
+    await this.client.eval(
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0",
+      {
+        keys: [activeKey(conversationId)],
+        arguments: [runId],
+      },
+    );
   }
 
   async activeRun(conversationId: string): Promise<string | null> {

@@ -26,7 +26,12 @@ const store = useAppStore();
       <span class="live-dot" />
       run live
     </span>
-    <button class="ghost theme" type="button" aria-label="Toggle theme" @click="store.toggleTheme()">
+    <button
+      class="ghost theme"
+      type="button"
+      aria-label="Toggle theme"
+      @click="store.toggleTheme()"
+    >
       {{ store.effectiveTheme === 'dark' ? '◑' : '◐' }}
     </button>
   </header>

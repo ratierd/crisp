@@ -88,8 +88,12 @@ describe('loadModels probe gating (ADR-0004)', () => {
   });
 
   it('appends discovered BYO models and flips byoConnected', async () => {
-    mocks.getModels.mockResolvedValue([model('demo/demo', { provider: 'Demo', provenance: 'local' })]);
-    mocks.discoverByoModels.mockResolvedValue([model('byo/llama3.2:3b', { provider: 'Ollama (yours)', provenance: 'local' })]);
+    mocks.getModels.mockResolvedValue([
+      model('demo/demo', { provider: 'Demo', provenance: 'local' }),
+    ]);
+    mocks.discoverByoModels.mockResolvedValue([
+      model('byo/llama3.2:3b', { provider: 'Ollama (yours)', provenance: 'local' }),
+    ]);
     const store = useAppStore();
     await store.loadModels(true);
     expect(store.byoConnected).toBe(true);
@@ -124,7 +128,10 @@ describe('BYOK: withUserKey / setApiKey / userApiKeyFor (ADR-0006)', () => {
     const store = useAppStore();
     const available = model('anthropic/claude-haiku-4-5');
     expect(store.withUserKey(available)).toBe(available);
-    const unavailable = model('openai/gpt-4o-mini', { available: false, unavailableReason: 'no key' });
+    const unavailable = model('openai/gpt-4o-mini', {
+      available: false,
+      unavailableReason: 'no key',
+    });
     expect(store.withUserKey(unavailable)).toBe(unavailable);
   });
 
@@ -196,7 +203,12 @@ describe('layout and navigation', () => {
     const id = store.activeConversationId;
     expect(store.freshConversationIds.has(id)).toBe(true);
     mocks.listConversations.mockResolvedValue([
-      { id, title: 'Hello', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      {
+        id,
+        title: 'Hello',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
     ] as never);
     await store.loadConversations();
     expect(store.freshConversationIds.has(id)).toBe(false);

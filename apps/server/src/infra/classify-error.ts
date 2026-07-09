@@ -8,7 +8,11 @@ import type { RunErrorKind } from '@crisp/contracts';
 export const classifyProviderError = (message: string, code?: string): RunErrorKind => {
   const haystack = `${code ?? ''} ${message}`.toLowerCase();
   if (/\babort/.test(haystack)) return 'aborted';
-  if (/(\b401\b|\b403\b|unauthorized|forbidden|authentication|invalid.{0,10}(api.)?key|api key)/.test(haystack)) {
+  if (
+    /(\b401\b|\b403\b|unauthorized|forbidden|authentication|invalid.{0,10}(api.)?key|api key)/.test(
+      haystack,
+    )
+  ) {
     return 'auth_failed';
   }
   if (/(\b429\b|rate.?limit|too many requests|quota|overloaded)/.test(haystack)) {

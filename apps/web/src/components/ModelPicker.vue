@@ -197,9 +197,16 @@ onBeforeUnmount(() => {
         <div class="section">YOUR OLLAMA · NOT CONNECTED</div>
         <div class="byo-hint">
           Chat with models running on this machine — allow this origin on your daemon, then reopen:
-          <a class="byo-guide" href="/byo-ollama.html" target="_blank" rel="noreferrer">full setup guide →</a>
+          <a class="byo-guide" href="/byo-ollama.html" target="_blank" rel="noreferrer"
+            >full setup guide →</a
+          >
         </div>
-        <button class="byo-cmd" type="button" :title="copied ? 'Copied' : 'Copy command'" @click="copyCommand">
+        <button
+          class="byo-cmd"
+          type="button"
+          :title="copied ? 'Copied' : 'Copy command'"
+          @click="copyCommand"
+        >
           <code>{{ command }}</code>
           <span class="copy">{{ copied ? 'copied ✓' : 'copy' }}</span>
         </button>

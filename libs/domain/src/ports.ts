@@ -1,4 +1,10 @@
-import type { Conversation, ConversationWithMessages, Feedback, Message, Model } from '@crisp/contracts';
+import type {
+  Conversation,
+  ConversationWithMessages,
+  Feedback,
+  Message,
+  Model,
+} from '@crisp/contracts';
 
 /**
  * An AG-UI streaming event. Events cross the hexagon untranslated (ADR-0002);

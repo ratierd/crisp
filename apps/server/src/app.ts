@@ -5,7 +5,12 @@ import { getCookie } from 'hono/cookie';
 import { byoRunRequestSchema, chatRequestSchema, feedbackRequestSchema } from '@crisp/contracts';
 import type { MiddlewareHandler } from 'hono';
 import type { StreamChunk } from '@crisp/ai';
-import type { ConversationRepository, FeedbackSink, RunMirror, RunStreamStore } from '@crisp/domain';
+import type {
+  ConversationRepository,
+  FeedbackSink,
+  RunMirror,
+  RunStreamStore,
+} from '@crisp/domain';
 import { ConversationService, RunService, TitleService } from '@crisp/domain';
 import type { ModelGateway } from '@crisp/domain';
 import type { Env } from './infra/env';
@@ -67,7 +72,10 @@ export const createApp = (deps: AppDeps) => {
     conversations: deps.conversations,
     runStreams: deps.runStreams,
   });
-  const titleService = new TitleService({ gateway: deps.gateway, conversations: conversationService });
+  const titleService = new TitleService({
+    gateway: deps.gateway,
+    conversations: conversationService,
+  });
   const runManager = new RunManager(runService, conversationService, titleService, deps.runStreams);
 
   const app = new Hono<AppEnv>();
@@ -91,7 +99,8 @@ export const createApp = (deps: AppDeps) => {
       // Behind a TLS-terminating edge (Railway) the request URL is http;
       // the edge asserts the original scheme via X-Forwarded-Proto.
       const https =
-        new URL(c.req.url).protocol === 'https:' || c.req.header('x-forwarded-proto')?.split(',')[0]?.trim() === 'https';
+        new URL(c.req.url).protocol === 'https:' ||
+        c.req.header('x-forwarded-proto')?.split(',')[0]?.trim() === 'https';
       const secure = https ? '; Secure' : '';
       c.res.headers.append(
         'set-cookie',
@@ -133,7 +142,9 @@ export const createApp = (deps: AppDeps) => {
     return c.json({ ok, redis, db, startedAt }, ok ? 200 : 503);
   });
 
-  app.get('/api/models', guard('read'), async (c) => c.json({ models: await deps.registry.listModels() }));
+  app.get('/api/models', guard('read'), async (c) =>
+    c.json({ models: await deps.registry.listModels() }),
+  );
 
   app.get('/api/conversations', guard('read'), async (c) =>
     c.json({ conversations: await conversationService.list(c.get('owner')) }),
@@ -159,8 +170,11 @@ export const createApp = (deps: AppDeps) => {
     // BYOK (ADR-0006): a user-supplied key makes an env-unavailable Model
     // usable for this request. The key is handed to the gateway and dropped.
     const userApiKey = forwardedProps.apiKey;
-    const model = await deps.registry.find(forwardedProps.modelId, { withUserKey: userApiKey !== undefined });
-    if (!model) return c.json({ error: `Model "${forwardedProps.modelId}" is not available.` }, 400);
+    const model = await deps.registry.find(forwardedProps.modelId, {
+      withUserKey: userApiKey !== undefined,
+    });
+    if (!model)
+      return c.json({ error: `Model "${forwardedProps.modelId}" is not available.` }, 400);
 
     const history = toGatewayHistory(messages);
     if (history.length === 0) return c.json({ error: 'No usable messages in request.' }, 400);
@@ -290,7 +304,10 @@ export const createApp = (deps: AppDeps) => {
   });
 
   app.get('/api/runs/:runId/events', guard('read'), (c) => {
-    const replay = deps.runStreams.replay(c.req.param('runId'), c.req.raw.signal) as AsyncIterable<StreamChunk>;
+    const replay = deps.runStreams.replay(
+      c.req.param('runId'),
+      c.req.raw.signal,
+    ) as AsyncIterable<StreamChunk>;
     return toServerSentEventsResponse(replay);
   });
 
@@ -306,7 +323,10 @@ export const createApp = (deps: AppDeps) => {
     if (!parsed.success) return c.json({ error: 'Malformed feedback request.' }, 400);
     const runId = c.req.param('runId');
     const feedback = parsed.data.score
-      ? { score: parsed.data.score, ...(parsed.data.comment ? { comment: parsed.data.comment } : {}) }
+      ? {
+          score: parsed.data.score,
+          ...(parsed.data.comment ? { comment: parsed.data.comment } : {}),
+        }
       : null;
     const found = await deps.conversations.setFeedback(runId, feedback, c.get('owner'));
     if (!found) return c.json({ error: 'No message for that run.' }, 404);

@@ -36,7 +36,9 @@ export const createProductionApp = async () => {
   const conversations = new SqliteConversationRepository(env.dbPath);
   const runStreams = await RedisRunStreamStore.connect(env.redisUrl);
   // Per-IP limits, unless the kill-switch is set (e2e, local load tests).
-  const rateLimit = env.rateLimitEnabled ? { store: await RedisTokenBucket.connect(env.redisUrl) } : undefined;
+  const rateLimit = env.rateLimitEnabled
+    ? { store: await RedisTokenBucket.connect(env.redisUrl) }
+    : undefined;
   const { app, runManager } = createApp({
     env,
     registry,
@@ -68,7 +70,8 @@ export const createProductionApp = async () => {
     );
     app.use('*', async (c, next) => {
       await next();
-      if (c.res.ok) c.res.headers.set('cache-control', cacheControlFor(new URL(c.req.url).pathname));
+      if (c.res.ok)
+        c.res.headers.set('cache-control', cacheControlFor(new URL(c.req.url).pathname));
     });
     app.use('*', serveStatic({ root: env.staticDir }));
     app.get('*', serveStatic({ path: `${env.staticDir}/index.html` }));

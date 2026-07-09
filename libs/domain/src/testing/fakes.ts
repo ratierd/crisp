@@ -1,5 +1,11 @@
 import type { Conversation, ConversationWithMessages, Feedback, Message } from '@crisp/contracts';
-import type { ConversationRepository, ModelGateway, RunEvent, RunStreamStore, StartRunOptions } from '../ports';
+import type {
+  ConversationRepository,
+  ModelGateway,
+  RunEvent,
+  RunStreamStore,
+  StartRunOptions,
+} from '../ports';
 
 /** In-memory ConversationRepository for tests. */
 export class FakeConversationRepository implements ConversationRepository {
@@ -49,7 +55,10 @@ export class FakeConversationRepository implements ConversationRepository {
     // Same contract as SQLite: appending bumps the conversation's recency.
     const conversation = this.conversations.get(conversationId);
     if (conversation) {
-      this.conversations.set(conversationId, { ...conversation, updatedAt: new Date().toISOString() });
+      this.conversations.set(conversationId, {
+        ...conversation,
+        updatedAt: new Date().toISOString(),
+      });
     }
   }
 

@@ -1,5 +1,11 @@
 import type { Message, Model, RunErrorKind } from '@crisp/contracts';
-import type { ConversationRepository, GatewayMessage, ModelGateway, RunEvent, RunStreamStore } from '../ports';
+import type {
+  ConversationRepository,
+  GatewayMessage,
+  ModelGateway,
+  RunEvent,
+  RunStreamStore,
+} from '../ports';
 
 export interface RunServiceDeps {
   gateway: ModelGateway;
@@ -63,7 +69,10 @@ export class RunService {
         await write();
       } catch (error) {
         streamBroken = true;
-        console.warn(`run ${runId}: stream store unavailable, continuing without live delivery`, error);
+        console.warn(
+          `run ${runId}: stream store unavailable, continuing without live delivery`,
+          error,
+        );
       }
     };
 

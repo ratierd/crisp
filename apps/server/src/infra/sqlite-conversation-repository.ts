@@ -60,17 +60,29 @@ export class SqliteConversationRepository implements ConversationRepository {
 
   async create(conversation: Conversation, owner: string): Promise<void> {
     this.db
-      .query('INSERT INTO conversations (id, title, created_at, updated_at, owner) VALUES (?1, ?2, ?3, ?4, ?5)')
-      .run(conversation.id, conversation.title, conversation.createdAt, conversation.updatedAt, owner);
+      .query(
+        'INSERT INTO conversations (id, title, created_at, updated_at, owner) VALUES (?1, ?2, ?3, ?4, ?5)',
+      )
+      .run(
+        conversation.id,
+        conversation.title,
+        conversation.createdAt,
+        conversation.updatedAt,
+        owner,
+      );
   }
 
   async get(id: string, owner: string): Promise<ConversationWithMessages | null> {
     const row = this.db
-      .query<ConversationRow, [string, string]>('SELECT * FROM conversations WHERE id = ?1 AND owner = ?2')
+      .query<ConversationRow, [string, string]>(
+        'SELECT * FROM conversations WHERE id = ?1 AND owner = ?2',
+      )
       .get(id, owner);
     if (!row) return null;
     const messageRows = this.db
-      .query<MessageRow, [string]>('SELECT payload FROM messages WHERE conversation_id = ?1 ORDER BY seq')
+      .query<MessageRow, [string]>(
+        'SELECT payload FROM messages WHERE conversation_id = ?1 ORDER BY seq',
+      )
       .all(id);
     const messages = messageRows.map((m): Message => messageSchema.parse(JSON.parse(m.payload)));
     return { ...toConversation(row), messages, activeRunId: null };
@@ -78,7 +90,9 @@ export class SqliteConversationRepository implements ConversationRepository {
 
   async list(owner: string): Promise<Conversation[]> {
     return this.db
-      .query<ConversationRow, [string]>('SELECT * FROM conversations WHERE owner = ?1 ORDER BY updated_at DESC')
+      .query<ConversationRow, [string]>(
+        'SELECT * FROM conversations WHERE owner = ?1 ORDER BY updated_at DESC',
+      )
       .all(owner)
       .map(toConversation);
   }

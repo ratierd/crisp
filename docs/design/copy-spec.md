@@ -17,13 +17,13 @@ Voice: calm, specific, no exclamation marks, no apologies. Metadata is lowercase
 Card = glyph in hairline circle · title (semibold) · kind label (mono, footnote) · body · `Retry` button.
 `{provider}` = human name of the model's provider (Ollama, Anthropic, OpenAI, "the demo provider").
 
-| kind | glyph | title | body |
-|---|---|---|---|
-| provider_unavailable | ⊘ | Provider unreachable | Crisp couldn't reach {provider}. Check that it's running and reachable, then retry. |
-| auth_failed | ✕ | Authentication failed | {provider} rejected the request — the API key looks missing or invalid. Fix the key, then retry. |
-| rate_limited | ◔ | Rate limited | {provider} asked us to slow down. Give it a few seconds, then retry. |
-| aborted | ▪ | Run stopped | The run was stopped before the first token arrived. Nothing was written. |
-| unknown | ? | Something went wrong | An unexpected error ended this run. Retrying usually works. |
+| kind                 | glyph | title                 | body                                                                                             |
+| -------------------- | ----- | --------------------- | ------------------------------------------------------------------------------------------------ |
+| provider_unavailable | ⊘     | Provider unreachable  | Crisp couldn't reach {provider}. Check that it's running and reachable, then retry.              |
+| auth_failed          | ✕     | Authentication failed | {provider} rejected the request — the API key looks missing or invalid. Fix the key, then retry. |
+| rate_limited         | ◔     | Rate limited          | {provider} asked us to slow down. Give it a few seconds, then retry.                             |
+| aborted              | ▪     | Run stopped           | The run was stopped before the first token arrived. Nothing was written.                         |
+| unknown              | ?     | Something went wrong  | An unexpected error ended this run. Retrying usually works.                                      |
 
 Note: `aborted` renders as a card only when zero tokens arrived. If a partial Message
 exists, keep the prose and show the stopped footnote instead (below).

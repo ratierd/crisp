@@ -31,7 +31,11 @@ interface AnthropicStreamEvent {
 export const createAnthropicChat = (model: string, apiKey: string): TextAdapter => ({
   name: 'anthropic',
   model,
-  async *chatStream({ messages, systemPrompts, signal }: AdapterRequest): AsyncIterable<AdapterEvent> {
+  async *chatStream({
+    messages,
+    systemPrompts,
+    signal,
+  }: AdapterRequest): AsyncIterable<AdapterEvent> {
     const response = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       headers: {
@@ -62,7 +66,11 @@ export const createAnthropicChat = (model: string, apiKey: string): TextAdapter 
           completionTokens = event.message?.usage?.output_tokens ?? 0;
           break;
         case 'content_block_delta':
-          if (event.delta?.type === 'text_delta' && typeof event.delta.text === 'string' && event.delta.text.length > 0) {
+          if (
+            event.delta?.type === 'text_delta' &&
+            typeof event.delta.text === 'string' &&
+            event.delta.text.length > 0
+          ) {
             yield { type: 'text-delta', delta: event.delta.text };
           }
           break;
@@ -73,7 +81,10 @@ export const createAnthropicChat = (model: string, apiKey: string): TextAdapter 
           break;
         case 'error':
           // Anthropic reports mid-stream failures (e.g. overloaded) in-band
-          throw new ProviderError(event.error?.message ?? 'The provider reported an error.', event.error?.type);
+          throw new ProviderError(
+            event.error?.message ?? 'The provider reported an error.',
+            event.error?.type,
+          );
       }
     }
     const finishReason = finishReasonOf(stopReason);

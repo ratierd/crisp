@@ -11,7 +11,7 @@ for the lifetime of the Run (title generation reuses it, so the same account
 pays for its own titles), and is never persisted, logged, or forwarded to
 observability — the LangSmith decorator traces model, messages, and usage,
 not options it doesn't understand. `/api/models` still reports env-gated
-availability honestly; the *client* upgrades a model to available when it
+availability honestly; the _client_ upgrades a model to available when it
 holds a key for that provider, and `POST /api/chat` accepts an env-unavailable
 model when the request carries a key.
 

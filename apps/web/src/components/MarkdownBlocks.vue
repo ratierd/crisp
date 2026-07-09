@@ -20,7 +20,9 @@ const html = (text: string, isLast: boolean) => {
   <div class="prose">
     <template v-for="(block, index) in blocks" :key="index">
       <CodeBlock v-if="block.type === 'code'" :code="block.code" :lang="block.lang" />
-      <pre v-else-if="block.type === 'open-code'" class="open-fence">{{ block.code }}<span v-if="caret && index === blocks.length - 1" class="stream-caret" /></pre>
+      <pre
+        v-else-if="block.type === 'open-code'"
+        class="open-fence">{{ block.code }}<span v-if="caret && index === blocks.length - 1" class="stream-caret" /></pre>
       <div
         v-else
         v-memo="[block.text, caret && index === blocks.length - 1]"

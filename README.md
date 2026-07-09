@@ -45,7 +45,7 @@ console visit needed. The key stays in that browser's localStorage, rides each r
 next to the model id, is used for that Run, and is never stored or logged
 server-side.
 
-Local models are **BYO Ollama** — always discovered and run by the *browser*,
+Local models are **BYO Ollama** — always discovered and run by the _browser_,
 never the server, exactly as they would be against a deployed Crisp. On
 localhost a running daemon just works (Ollama allows localhost origins by
 default); every installed model appears in the picker. Against a deployed
@@ -75,13 +75,13 @@ bun setup                   # optional: keys, LangSmith, first local model
 bun dev                     # server :3000 + vite :5173
 ```
 
-| command | what it does |
-| --- | --- |
-| `bun setup` | interactive wizard: keys → `.env` (idempotent, secrets masked), pull a local model |
-| `bun dev` | dev servers (Hono on :3000, Vite on :5173) |
-| `bun run test` | unit + integration tests (Vitest — `run` matters: bare `bun test` invokes Bun's own runner) |
-| `bun typecheck` | strict TS across all packages |
-| `bun e2e` | Playwright smoke spec against the Demo model¹ |
+| command         | what it does                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| `bun setup`     | interactive wizard: keys → `.env` (idempotent, secrets masked), pull a local model          |
+| `bun dev`       | dev servers (Hono on :3000, Vite on :5173)                                                  |
+| `bun run test`  | unit + integration tests (Vitest — `run` matters: bare `bun test` invokes Bun's own runner) |
+| `bun typecheck` | strict TS across all packages                                                               |
+| `bun e2e`       | Playwright smoke spec against the Demo model¹                                               |
 
 ¹ needs Redis running; on NixOS point it at a system browser:
 `CRISP_E2E_BROWSER=$(which google-chrome-stable) bun e2e`.
@@ -91,19 +91,19 @@ bun dev                     # server :3000 + vite :5173
 Everything is optional (`bun setup` fills these interactively; see
 `.env.example` for the manual route):
 
-| var | default | effect |
-| --- | --- | --- |
-| `ANTHROPIC_API_KEY` | — | enables Claude models in the picker |
-| `OPENAI_API_KEY` | — | enables GPT models in the picker |
-| `OPENROUTER_API_KEY` | — | enables OpenRouter models in the picker |
-| `LANGSMITH_API_KEY` | — | traces every Run to LangSmith; feedback lands on traces |
-| `LANGSMITH_PROJECT` | `crisp` | LangSmith project name |
-| `LANGSMITH_ENDPOINT` | US host | set `https://eu.api.smith.langchain.com` for EU accounts |
-| `REDIS_URL` | `redis://localhost:6379` | run-stream buffer (required) |
-| `DB_PATH` | `./data/crisp.sqlite` | conversation storage |
-| `PORT` | `3000` | API port |
-| `CRISP_DEMO` | on | `off` hides the zero-key Demo model (set on the hosted instance) |
-| `CRISP_RATE_LIMIT` | on | `off` disables per-IP rate limiting (e2e, local load testing) |
+| var                  | default                  | effect                                                           |
+| -------------------- | ------------------------ | ---------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | —                        | enables Claude models in the picker                              |
+| `OPENAI_API_KEY`     | —                        | enables GPT models in the picker                                 |
+| `OPENROUTER_API_KEY` | —                        | enables OpenRouter models in the picker                          |
+| `LANGSMITH_API_KEY`  | —                        | traces every Run to LangSmith; feedback lands on traces          |
+| `LANGSMITH_PROJECT`  | `crisp`                  | LangSmith project name                                           |
+| `LANGSMITH_ENDPOINT` | US host                  | set `https://eu.api.smith.langchain.com` for EU accounts         |
+| `REDIS_URL`          | `redis://localhost:6379` | run-stream buffer (required)                                     |
+| `DB_PATH`            | `./data/crisp.sqlite`    | conversation storage                                             |
+| `PORT`               | `3000`                   | API port                                                         |
+| `CRISP_DEMO`         | on                       | `off` hides the zero-key Demo model (set on the hosted instance) |
+| `CRISP_RATE_LIMIT`   | on                       | `off` disables per-IP rate limiting (e2e, local load testing)    |
 
 ## What it does
 
@@ -125,7 +125,7 @@ Everything is optional (`bun setup` fills these interactively; see
   (`provider_unavailable` / `auth_failed` / `rate_limited` / `aborted` / `unknown`).
 - **Conversations**: SQLite-persisted history, auto-titled after the first
   exchange by the model that answered.
-- **BYO Ollama**: local models are always the *browser's* job — it discovers
+- **BYO Ollama**: local models are always the _browser's_ job — it discovers
   and runs the user's own daemon directly, in dev and deployed alike; the
   model list, streaming, stop, regenerate, and feedback all work identically
   to server runs. The picker shows the one-line `OLLAMA_ORIGINS` command
@@ -142,8 +142,8 @@ Everything is optional (`bun setup` fills these interactively; see
 
 ## Architecture
 
-Nx monorepo, pragmatic hexagonal. The domain knows *what* a chat app does;
-adapters know *how* tonight's infrastructure does it.
+Nx monorepo, pragmatic hexagonal. The domain knows _what_ a chat app does;
+adapters know _how_ tonight's infrastructure does it.
 
 ```
 apps/
@@ -158,15 +158,15 @@ libs/
 
 Five ports carry all the IO ([CONTEXT.md](CONTEXT.md) has the vocabulary):
 
-| port | job | adapter |
-| --- | --- | --- |
-| `ModelGateway` | start a Run against any Model, regardless of Provenance | `@crisp/ai` provider adapters + mock Demo provider, wrapped by a LangSmith tracing decorator when the key is set |
-| `ConversationRepository` | durable Conversations | `bun:sqlite` |
-| `RunStreamStore` | buffer live Run events for reattach | Redis Streams |
-| `FeedbackSink` | mirror thumbs votes to observability | LangSmith feedback API |
-| `RunMirror` | record browser-executed (BYO) Runs post-hoc | LangSmith run API |
+| port                     | job                                                     | adapter                                                                                                          |
+| ------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `ModelGateway`           | start a Run against any Model, regardless of Provenance | `@crisp/ai` provider adapters + mock Demo provider, wrapped by a LangSmith tracing decorator when the key is set |
+| `ConversationRepository` | durable Conversations                                   | `bun:sqlite`                                                                                                     |
+| `RunStreamStore`         | buffer live Run events for reattach                     | Redis Streams                                                                                                    |
+| `FeedbackSink`           | mirror thumbs votes to observability                    | LangSmith feedback API                                                                                           |
+| `RunMirror`              | record browser-executed (BYO) Runs post-hoc             | LangSmith run API                                                                                                |
 
-Observability never touches the domain: tracing is a *decorator* on
+Observability never touches the domain: tracing is a _decorator_ on
 `ModelGateway`, so without `LANGSMITH_API_KEY` the app composes exactly as it
 did before the feature existed.
 
@@ -201,7 +201,7 @@ Recorded as they were made, in [docs/adr/](docs/adr/) and
   Accepted degradation: BYO runs can't mid-stream resume after a reload.
 - **LangSmith over first-party analytics** (ADR-0005). Usage, cost, failures,
   and user feedback live in LangSmith rather than a home-built dashboard —
-  one flat `llm` trace per Run whose id *is* the Run's id, conversations
+  one flat `llm` trace per Run whose id _is_ the Run's id, conversations
   grouped as Threads. Deliberate trade: conversations with local models leave
   the machine. A first-party run ledger was designed and rejected.
 
@@ -226,7 +226,7 @@ Other tradeoffs, honestly:
   it against the live project (drift gate for CI), `railway config apply`
   converges, `railway up --service crisp` ships code. Secrets stay on
   Railway (`preserve()`), never in source. Visitors get real models via
-  BYOK and their *own* Ollama via BYO — the hosted instance needs no
+  BYOK and their _own_ Ollama via BYO — the hosted instance needs no
   provider keys at all.
 - **Shiki's dual themes** (`min-light`/`min-dark`) ride the same
   `light-dark()` mechanism as the app tokens, rather than being remapped

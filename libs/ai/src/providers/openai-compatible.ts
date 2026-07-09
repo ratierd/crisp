@@ -32,12 +32,19 @@ interface CompletionChunk {
  * (OpenRouter, and OpenAI itself via `@crisp/ai/openai`). Streams SSE chunks,
  * asking for the final usage frame via `stream_options.include_usage`.
  */
-export const openaiCompatibleText = (model: string, config: OpenaiCompatibleConfig): TextAdapter => {
+export const openaiCompatibleText = (
+  model: string,
+  config: OpenaiCompatibleConfig,
+): TextAdapter => {
   const name = config.name ?? 'openai-compatible';
   return {
     name,
     model,
-    async *chatStream({ messages, systemPrompts, signal }: AdapterRequest): AsyncIterable<AdapterEvent> {
+    async *chatStream({
+      messages,
+      systemPrompts,
+      signal,
+    }: AdapterRequest): AsyncIterable<AdapterEvent> {
       const response = await fetch(`${config.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -48,7 +55,9 @@ export const openaiCompatibleText = (model: string, config: OpenaiCompatibleConf
         body: JSON.stringify({
           model,
           messages: [
-            ...(systemPrompts && systemPrompts.length > 0 ? [{ role: 'system', content: systemPrompts.join('\n') }] : []),
+            ...(systemPrompts && systemPrompts.length > 0
+              ? [{ role: 'system', content: systemPrompts.join('\n') }]
+              : []),
             ...messages.map((m) => ({ role: m.role, content: m.content })),
           ],
           stream: true,
@@ -67,8 +76,14 @@ export const openaiCompatibleText = (model: string, config: OpenaiCompatibleConf
         // Some compatible providers (OpenRouter among them) report mid-stream
         // failures as an `error` field on an otherwise ordinary chunk.
         if (chunk.error) {
-          const message = typeof chunk.error === 'string' ? chunk.error : (chunk.error.message ?? 'The provider reported an error.');
-          const code = typeof chunk.error === 'object' && chunk.error.code !== undefined ? String(chunk.error.code) : undefined;
+          const message =
+            typeof chunk.error === 'string'
+              ? chunk.error
+              : (chunk.error.message ?? 'The provider reported an error.');
+          const code =
+            typeof chunk.error === 'object' && chunk.error.code !== undefined
+              ? String(chunk.error.code)
+              : undefined;
           throw new ProviderError(message, code);
         }
         const choice = chunk.choices?.[0];

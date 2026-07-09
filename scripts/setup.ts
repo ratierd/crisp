@@ -212,9 +212,7 @@ async function pullModel(model: string): Promise<boolean> {
           return false;
         }
         const pct =
-          evt.total && evt.completed
-            ? ` ${Math.round((evt.completed / evt.total) * 100)}%`
-            : '';
+          evt.total && evt.completed ? ` ${Math.round((evt.completed / evt.total) * 100)}%` : '';
         s.message(`Pulling ${model} — ${evt.status ?? '…'}${pct}`);
       }
     }
@@ -291,7 +289,9 @@ async function ollamaStep(): Promise<void> {
     }
     if (models.length > 0) {
       s.stop(`Ollama connected — ${models.join(', ')} will appear in Crisp's picker automatically`);
-      const more = got(await p.confirm({ message: 'Pull another model now?', initialValue: false }));
+      const more = got(
+        await p.confirm({ message: 'Pull another model now?', initialValue: false }),
+      );
       if (!more) return;
     } else {
       s.stop('Ollama connected — no models installed yet');
@@ -361,7 +361,9 @@ async function main(): Promise<void> {
   next.set('LANGSMITH_API_KEY', lsKey);
   if (lsKey && detectedEndpoint) {
     next.set('LANGSMITH_ENDPOINT', detectedEndpoint);
-    p.log.success(`Key belongs to LangSmith EU — LANGSMITH_ENDPOINT will be set to ${detectedEndpoint}.`);
+    p.log.success(
+      `Key belongs to LangSmith EU — LANGSMITH_ENDPOINT will be set to ${detectedEndpoint}.`,
+    );
   }
   if (lsKey) {
     const project = got(
@@ -395,13 +397,17 @@ async function main(): Promise<void> {
     );
     if (ok) {
       await Bun.write(ENV_PATH, lines.join('\n'));
-      p.log.success(`.env ${envExists ? 'updated' : 'created'} — compose and bun dev both read it.`);
+      p.log.success(
+        `.env ${envExists ? 'updated' : 'created'} — compose and bun dev both read it.`,
+      );
     } else {
       p.log.warn('Nothing written.');
     }
   }
 
-  p.outro('Run `docker compose up --build` → http://localhost:3000  (dev: `docker compose up redis -d && bun dev`)');
+  p.outro(
+    'Run `docker compose up --build` → http://localhost:3000  (dev: `docker compose up redis -d && bun dev`)',
+  );
 }
 
 if (import.meta.main) await main();

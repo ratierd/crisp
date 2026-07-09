@@ -25,11 +25,15 @@ describe('toServerSentEventsResponse', () => {
       ]),
     );
     const body = await response.text();
-    expect(body).toBe('data: {"type":"RUN_STARTED","runId":"r1"}\n\ndata: {"type":"TEXT_MESSAGE_CONTENT","delta":"hi"}\n\n');
+    expect(body).toBe(
+      'data: {"type":"RUN_STARTED","runId":"r1"}\n\ndata: {"type":"TEXT_MESSAGE_CONTENT","delta":"hi"}\n\n',
+    );
   });
 
   it('a stream failure surfaces in-band as a final RUN_ERROR frame', async () => {
-    const response = toServerSentEventsResponse(streamOf([{ type: 'RUN_STARTED' }], new Error('redis gone')));
+    const response = toServerSentEventsResponse(
+      streamOf([{ type: 'RUN_STARTED' }], new Error('redis gone')),
+    );
     const frames = (await response.text()).split('\n\n').filter(Boolean);
     const last = JSON.parse(frames.at(-1)!.slice('data: '.length)) as StreamChunk;
     expect(last.type).toBe('RUN_ERROR');

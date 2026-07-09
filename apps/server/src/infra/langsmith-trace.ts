@@ -26,7 +26,15 @@ export interface OpenTraceInput {
  * LangSmith id IS the Run's id, with the Conversation id as `thread_id`
  * metadata so LangSmith's Threads view groups a Conversation.
  */
-export const openTrace = ({ client, projectName, model, runId, threadId, messages, startTime }: OpenTraceInput): RunTree => {
+export const openTrace = ({
+  client,
+  projectName,
+  model,
+  runId,
+  threadId,
+  messages,
+  startTime,
+}: OpenTraceInput): RunTree => {
   const [provider = 'unknown', ...rest] = model.id.split('/');
   return new RunTree({
     name: model.id,
@@ -53,7 +61,8 @@ export const traceOutputs = (text: string, usage?: TraceUsage) => ({
         usage_metadata: {
           input_tokens: usage.promptTokens ?? 0,
           output_tokens: usage.completionTokens ?? 0,
-          total_tokens: usage.totalTokens ?? (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0),
+          total_tokens:
+            usage.totalTokens ?? (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0),
         },
       }
     : {}),

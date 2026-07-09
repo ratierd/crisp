@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FakeConversationRepository, FakeModelGateway, FakeRunStreamStore } from '@crisp/domain/testing';
+import {
+  FakeConversationRepository,
+  FakeModelGateway,
+  FakeRunStreamStore,
+} from '@crisp/domain/testing';
 import type { RunEvent } from '@crisp/domain';
 import { createApp } from '../src/app';
 import { loadEnv } from '../src/infra/env';
@@ -12,7 +16,9 @@ import { AiModelGateway } from '../src/infra/ai-gateway';
  */
 type Requester = (path: string, init?: RequestInit) => Promise<Response>;
 // `request` is typed loosely so any Hono instance fits, whatever its Env generic.
-const withCookies = (app: { request: (path: any, init?: any) => Response | Promise<Response> }): Requester => {
+const withCookies = (app: {
+  request: (path: any, init?: any) => Response | Promise<Response>;
+}): Requester => {
   let cookie: string | undefined;
   return async (path, init = {}) => {
     const headers = new Headers(init.headers);
@@ -34,10 +40,16 @@ const makeApp = (envOverrides: Record<string, string | undefined> = {}) => {
   return { app, request: withCookies(app), runManager, conversations, runStreams };
 };
 
-const chatBody = (conversationId: string, text: string, overrides: Record<string, unknown> = {}) => ({
+const chatBody = (
+  conversationId: string,
+  text: string,
+  overrides: Record<string, unknown> = {},
+) => ({
   threadId: conversationId,
   runId: 'client-run',
-  messages: [{ id: `u-${text.slice(0, 8)}`, role: 'user', parts: [{ type: 'text', content: text }] }],
+  messages: [
+    { id: `u-${text.slice(0, 8)}`, role: 'user', parts: [{ type: 'text', content: text }] },
+  ],
   forwardedProps: { modelId: 'demo/demo' },
   ...overrides,
 });
@@ -87,14 +99,20 @@ describe('GET /api/models', () => {
     const without = makeApp();
     const withKey = makeApp({ OPENROUTER_API_KEY: 'sk-or-test' });
 
-    const locked = ((await (await without.app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> })
-      .models.filter((m) => m.provider === 'OpenRouter');
+    const locked = (
+      (await (await without.app.request('/api/models')).json()) as {
+        models: Array<Record<string, unknown>>;
+      }
+    ).models.filter((m) => m.provider === 'OpenRouter');
     expect(locked.length).toBeGreaterThan(0);
     expect(locked.every((m) => m.available === false)).toBe(true);
     expect(locked[0]!.unavailableReason).toContain('OPENROUTER_API_KEY');
 
-    const open = ((await (await withKey.app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> })
-      .models.filter((m) => m.provider === 'OpenRouter');
+    const open = (
+      (await (await withKey.app.request('/api/models')).json()) as {
+        models: Array<Record<string, unknown>>;
+      }
+    ).models.filter((m) => m.provider === 'OpenRouter');
     expect(open.every((m) => m.available === true)).toBe(true);
     // OpenRouter model names keep their vendor/model form after the provider segment
     expect(open.some((m) => m.id === 'openrouter/deepseek/deepseek-chat')).toBe(true);
@@ -106,7 +124,9 @@ describe('GET /api/models', () => {
   it('CRISP_DEMO=off hides the Demo model and makes it unrunnable', async () => {
     const { app, request } = makeApp({ CRISP_DEMO: 'off' });
 
-    const { models } = (await (await app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> };
+    const { models } = (await (await app.request('/api/models')).json()) as {
+      models: Array<Record<string, unknown>>;
+    };
     expect(models.some((m) => m.id === 'demo/demo')).toBe(false);
 
     const response = await request('/api/chat', {
@@ -144,7 +164,9 @@ describe('POST /api/chat', () => {
 
     // conversation exists with the fallback (or generated) title
     const list = await request('/api/conversations');
-    const { conversations: convs } = (await list.json()) as { conversations: Array<{ id: string }> };
+    const { conversations: convs } = (await list.json()) as {
+      conversations: Array<{ id: string }>;
+    };
     expect(convs.some((c) => c.id === 'conv-1')).toBe(true);
   });
 
@@ -170,7 +192,9 @@ describe('POST /api/chat', () => {
     const response = await app.request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(chatBody('conv-x', 'hi', { forwardedProps: { modelId: 'anthropic/claude-sonnet-4-6' } })),
+      body: JSON.stringify(
+        chatBody('conv-x', 'hi', { forwardedProps: { modelId: 'anthropic/claude-sonnet-4-6' } }),
+      ),
     });
     expect(response.status).toBe(400);
   });
@@ -181,7 +205,13 @@ describe('POST /api/chat', () => {
     const gateway = new FakeModelGateway();
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();
-    const { app } = createApp({ env, registry: new ModelRegistry(env), gateway, conversations, runStreams });
+    const { app } = createApp({
+      env,
+      registry: new ModelRegistry(env),
+      gateway,
+      conversations,
+      runStreams,
+    });
 
     const response = await app.request('/api/chat', {
       method: 'POST',
@@ -213,42 +243,46 @@ describe('POST /api/chat', () => {
     expect(response.status).toBe(400);
   });
 
-  it('409s a concurrent send for the same conversation (atomic claim)', { timeout: 10_000 }, async () => {
-    const env = loadEnv({});
-    const conversations = new FakeConversationRepository();
-    const runStreams = new FakeRunStreamStore();
-    const { app } = createApp({
-      env,
-      registry: new ModelRegistry(env),
-      // Any delay works: the claim is decided before the first token streams.
-      gateway: new AiModelGateway(env, { delayMs: 2 }),
-      conversations,
-      runStreams,
-    });
-    const request = withCookies(app);
-    await request('/api/conversations'); // prime the session cookie for both sends
-
-    const send = (text: string) =>
-      request('/api/chat', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(chatBody('conv-race', text)),
+  it(
+    '409s a concurrent send for the same conversation (atomic claim)',
+    { timeout: 10_000 },
+    async () => {
+      const env = loadEnv({});
+      const conversations = new FakeConversationRepository();
+      const runStreams = new FakeRunStreamStore();
+      const { app } = createApp({
+        env,
+        registry: new ModelRegistry(env),
+        // Any delay works: the claim is decided before the first token streams.
+        gateway: new AiModelGateway(env, { delayMs: 2 }),
+        conversations,
+        runStreams,
       });
+      const request = withCookies(app);
+      await request('/api/conversations'); // prime the session cookie for both sends
 
-    // Fire both without awaiting the first stream: only one may win the claim.
-    const [first, second] = await Promise.all([send('first message'), send('second message')]);
-    const statuses = [first.status, second.status].sort();
-    expect(statuses).toEqual([200, 409]);
+      const send = (text: string) =>
+        request('/api/chat', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(chatBody('conv-race', text)),
+        });
 
-    const winner = first.status === 200 ? first : second;
-    await readSse(winner); // drain to completion
+      // Fire both without awaiting the first stream: only one may win the claim.
+      const [first, second] = await Promise.all([send('first message'), send('second message')]);
+      const statuses = [first.status, second.status].sort();
+      expect(statuses).toEqual([200, 409]);
 
-    // once the run finished, the claim is released and a new send is accepted
-    await waitFor(async () => (await runStreams.activeRun('conv-race')) === null);
-    const third = await send('third message');
-    expect(third.status).toBe(200);
-    await readSse(third);
-  });
+      const winner = first.status === 200 ? first : second;
+      await readSse(winner); // drain to completion
+
+      // once the run finished, the claim is released and a new send is accepted
+      await waitFor(async () => (await runStreams.activeRun('conv-race')) === null);
+      const third = await send('third message');
+      expect(third.status).toBe(200);
+      await readSse(third);
+    },
+  );
 });
 
 describe('resume', () => {
@@ -257,21 +291,21 @@ describe('resume', () => {
 
     // First client starts a run and disconnects immediately.
     const firstClient = new AbortController();
-    const first = await app.request(
-      '/api/chat',
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(chatBody('conv-resume', 'walk me through markdown')),
-        signal: firstClient.signal,
-      },
-    );
+    const first = await app.request('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(chatBody('conv-resume', 'walk me through markdown')),
+      signal: firstClient.signal,
+    });
     const runId = first.headers.get('x-run-id')!;
     expect(runId).toBeTruthy();
     firstClient.abort();
 
     // The conversation reports the live run.
-    await waitFor(async () => (await runStreams.activeRun('conv-resume')) !== null || runStreams.finished.size > 0);
+    await waitFor(
+      async () =>
+        (await runStreams.activeRun('conv-resume')) !== null || runStreams.finished.size > 0,
+    );
 
     // Second client replays the same run to completion.
     const second = await app.request(`/api/runs/${runId}/events`);
@@ -342,11 +376,16 @@ describe('PUT /api/runs/:runId/feedback', () => {
     const assistant = await runExchange(request, conversations);
     expect(assistant.runId).toBeTruthy(); // RunService stamps the Run id
 
-    const vote = await putFeedback(request, assistant.runId!, { score: 'down', comment: 'too vague' });
+    const vote = await putFeedback(request, assistant.runId!, {
+      score: 'down',
+      comment: 'too vague',
+    });
     expect(vote.status).toBe(200);
     let stored = conversations.messages.get('conv-fb')![1]!;
     expect(stored.feedback).toEqual({ score: 'down', comment: 'too vague' });
-    expect(mirrored).toEqual([{ runId: assistant.runId, feedback: { score: 'down', comment: 'too vague' } }]);
+    expect(mirrored).toEqual([
+      { runId: assistant.runId, feedback: { score: 'down', comment: 'too vague' } },
+    ]);
 
     const retract = await putFeedback(request, assistant.runId!, { score: null });
     expect(retract.status).toBe(200);
@@ -429,7 +468,9 @@ describe('POST /api/conversations/:id/byo-runs', () => {
       body: JSON.stringify({ score: 'up' }),
     });
     expect(vote.status).toBe(200);
-    expect((await conversations.get('conv-byo', owner))!.messages[1]!.feedback).toEqual({ score: 'up' });
+    expect((await conversations.get('conv-byo', owner))!.messages[1]!.feedback).toEqual({
+      score: 'up',
+    });
   });
 
   it('dedupes the user message on regenerate and drops superseded answers', async () => {
@@ -473,7 +514,13 @@ describe('POST /api/conversations/:id/byo-runs', () => {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(
-        report({ runId: crypto.randomUUID(), assistantText: '', outcome: 'failed', error: 'CORS blocked', userMessage: undefined }),
+        report({
+          runId: crypto.randomUUID(),
+          assistantText: '',
+          outcome: 'failed',
+          error: 'CORS blocked',
+          userMessage: undefined,
+        }),
       ),
     });
     expect(response.status).toBe(200);
@@ -545,9 +592,13 @@ describe('visitor scoping (crisp_sid)', () => {
     await waitFor(() => (conversations.messages.get('conv-alice')?.length ?? 0) === 2);
 
     // alice sees her conversation; bob sees nothing
-    const aliceList = (await (await alice('/api/conversations')).json()) as { conversations: unknown[] };
+    const aliceList = (await (await alice('/api/conversations')).json()) as {
+      conversations: unknown[];
+    };
     expect(aliceList.conversations).toHaveLength(1);
-    const bobList = (await (await bob('/api/conversations')).json()) as { conversations: unknown[] };
+    const bobList = (await (await bob('/api/conversations')).json()) as {
+      conversations: unknown[];
+    };
     expect(bobList.conversations).toHaveLength(0);
     expect((await bob('/api/conversations/conv-alice')).status).toBe(404);
 
@@ -595,10 +646,18 @@ describe('GET /api/health', () => {
       runStreams: new FakeRunStreamStore(),
     };
 
-    const healthy = createApp({ ...base, probes: { redis: async () => {}, db: async () => {} } }).app;
+    const healthy = createApp({
+      ...base,
+      probes: { redis: async () => {}, db: async () => {} },
+    }).app;
     const up = await healthy.request('/api/health');
     expect(up.status).toBe(200);
-    const upBody = (await up.json()) as { ok: boolean; redis: boolean; db: boolean; startedAt: string };
+    const upBody = (await up.json()) as {
+      ok: boolean;
+      redis: boolean;
+      db: boolean;
+      startedAt: string;
+    };
     expect(upBody).toMatchObject({ ok: true, redis: true, db: true });
     expect(Number.isNaN(Date.parse(upBody.startedAt))).toBe(false);
 

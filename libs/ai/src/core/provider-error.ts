@@ -43,5 +43,8 @@ export const throwOnHttpError = async (response: Response, provider: string): Pr
     // unreadable body — the status line will have to do
   }
   const suffix = detail.message ? `: ${detail.message}` : '';
-  throw new ProviderError(`${provider} request failed with status ${response.status} ${response.statusText}${suffix}`, detail.code);
+  throw new ProviderError(
+    `${provider} request failed with status ${response.status} ${response.statusText}${suffix}`,
+    detail.code,
+  );
 };

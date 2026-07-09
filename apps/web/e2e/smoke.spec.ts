@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Crisp smoke (Demo model)', () => {
-  test('first run: empty state → streamed markdown answer → conversation listed', async ({ page }) => {
+  test('first run: empty state → streamed markdown answer → conversation listed', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     // empty state

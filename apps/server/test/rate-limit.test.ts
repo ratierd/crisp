@@ -62,7 +62,10 @@ describe('rate limiting', () => {
   });
 
   it('leaves /api/health unlimited and is entirely off without config', async () => {
-    const limited = makeApp({ store: new InMemoryTokenBucket(), rules: { read: { capacity: 1, refillPerMinute: 60 } } });
+    const limited = makeApp({
+      store: new InMemoryTokenBucket(),
+      rules: { read: { capacity: 1, refillPerMinute: 60 } },
+    });
     for (let i = 0; i < 5; i++) expect((await limited.request('/api/health')).status).toBe(200);
 
     const off = makeApp();
@@ -102,7 +105,9 @@ describe('body limit', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         threadId: 'conv-huge',
-        messages: [{ id: 'u1', role: 'user', parts: [{ type: 'text', content: 'x'.repeat(300 * 1024) }] }],
+        messages: [
+          { id: 'u1', role: 'user', parts: [{ type: 'text', content: 'x'.repeat(300 * 1024) }] },
+        ],
         forwardedProps: { modelId: 'demo/demo' },
       }),
     });
@@ -119,7 +124,11 @@ describe('body limit', () => {
     const response = await app.request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ threadId: 'conv-many', messages, forwardedProps: { modelId: 'demo/demo' } }),
+      body: JSON.stringify({
+        threadId: 'conv-many',
+        messages,
+        forwardedProps: { modelId: 'demo/demo' },
+      }),
     });
     expect(response.status).toBe(400);
   });

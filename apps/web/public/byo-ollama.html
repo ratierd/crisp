@@ -1,106 +1,210 @@
 <!doctype html>
 <!-- Canonical copy: docs/byo-ollama.md — keep in sync. -->
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<title>Crisp — Bring your own Ollama</title>
-<meta name="description" content="How to connect your own local Ollama models to a deployed Crisp instance.">
-<link rel="stylesheet" href="/byo-ollama.css">
-</head>
-<body>
-<header class="site">
-  <span class="brand"><strong>Crisp</strong> — Bring your own Ollama</span>
-  <a class="back" href="/">&larr; back to Crisp</a>
-</header>
-<main>
-  <h1>Bring your own Ollama</h1>
-  <p class="lede">Chat with models running on <strong>your</strong> machine, against a deployed Crisp.</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Crisp — Bring your own Ollama</title>
+    <meta
+      name="description"
+      content="How to connect your own local Ollama models to a deployed Crisp instance."
+    />
+    <link rel="stylesheet" href="/byo-ollama.css" />
+  </head>
+  <body>
+    <header class="site">
+      <span class="brand"><strong>Crisp</strong> — Bring your own Ollama</span>
+      <a class="back" href="/">&larr; back to Crisp</a>
+    </header>
+    <main>
+      <h1>Bring your own Ollama</h1>
+      <p class="lede">
+        Chat with models running on <strong>your</strong> machine, against a deployed Crisp.
+      </p>
 
-  <h2>What this is</h2>
-  <p>Crisp never runs local models on its server — it can't; a deployed server has no way to reach your <code>localhost</code>. Instead, the page in your browser discovers your own Ollama daemon, runs the generation right there in the tab, and streams it into the transcript exactly like a server run. The Crisp server never talks to your Ollama; the only thing it receives is the finished conversation. Your job: install Ollama, pull a model, and tell your daemon that the Crisp origin is allowed to call it. About five minutes.</p>
+      <h2>What this is</h2>
+      <p>
+        Crisp never runs local models on its server — it can't; a deployed server has no way to
+        reach your <code>localhost</code>. Instead, the page in your browser discovers your own
+        Ollama daemon, runs the generation right there in the tab, and streams it into the
+        transcript exactly like a server run. The Crisp server never talks to your Ollama; the only
+        thing it receives is the finished conversation. Your job: install Ollama, pull a model, and
+        tell your daemon that the Crisp origin is allowed to call it. About five minutes.
+      </p>
 
-  <h2>Privacy, honestly</h2>
-  <p>Generation happens on your machine — prompts and tokens flow between your browser tab and your local daemon, and the model itself never leaves your disk. But local-only <em>execution</em> is not local-only <em>storage</em>: once a run finishes, the browser reports the conversation to the Crisp server, which persists it. And when the operator has LangSmith observability enabled, that finished run is mirrored there as a trace too. If you don't want a conversation stored, don't have it here.</p>
+      <h2>Privacy, honestly</h2>
+      <p>
+        Generation happens on your machine — prompts and tokens flow between your browser tab and
+        your local daemon, and the model itself never leaves your disk. But local-only
+        <em>execution</em> is not local-only <em>storage</em>: once a run finishes, the browser
+        reports the conversation to the Crisp server, which persists it. And when the operator has
+        LangSmith observability enabled, that finished run is mirrored there as a trace too. If you
+        don't want a conversation stored, don't have it here.
+      </p>
 
-  <h2>Step 1 — install Ollama</h2>
-  <ul>
-    <li><strong>macOS / Windows</strong>: download the app from <a href="https://ollama.com/download">ollama.com/download</a> and run it. It lives in the menu bar / system tray.</li>
-    <li><strong>Linux</strong>:
-      <pre><code>curl -fsSL https://ollama.com/install.sh | sh</code></pre>
-      This installs a systemd service that starts on boot.</li>
-  </ul>
+      <h2>Step 1 — install Ollama</h2>
+      <ul>
+        <li>
+          <strong>macOS / Windows</strong>: download the app from
+          <a href="https://ollama.com/download">ollama.com/download</a> and run it. It lives in the
+          menu bar / system tray.
+        </li>
+        <li>
+          <strong>Linux</strong>:
+          <pre><code>curl -fsSL https://ollama.com/install.sh | sh</code></pre>
+          This installs a systemd service that starts on boot.
+        </li>
+      </ul>
 
-  <h2>Step 2 — pull a model</h2>
-  <pre><code>ollama pull llama3.2:3b</code></pre>
-  <p>Some good starting points:</p>
-  <table>
-    <thead><tr><th>model</th><th>size</th><th>good for</th></tr></thead>
-    <tbody>
-      <tr><td><code>smollm2:135m</code></td><td>~0.3&nbsp;GB</td><td>a quick test — downloads in seconds</td></tr>
-      <tr><td><code>llama3.2:3b</code></td><td>~2.5&nbsp;GB</td><td>solid everyday chat on modest hardware</td></tr>
-      <tr><td><code>qwen2.5:7b</code></td><td>~5&nbsp;GB</td><td>stronger answers if you have the RAM</td></tr>
-    </tbody>
-  </table>
-  <p>Any GGUF on HuggingFace works too: <code>ollama pull hf.co/&lt;user&gt;/&lt;repo&gt;</code>.</p>
+      <h2>Step 2 — pull a model</h2>
+      <pre><code>ollama pull llama3.2:3b</code></pre>
+      <p>Some good starting points:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>model</th>
+            <th>size</th>
+            <th>good for</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>smollm2:135m</code></td>
+            <td>~0.3&nbsp;GB</td>
+            <td>a quick test — downloads in seconds</td>
+          </tr>
+          <tr>
+            <td><code>llama3.2:3b</code></td>
+            <td>~2.5&nbsp;GB</td>
+            <td>solid everyday chat on modest hardware</td>
+          </tr>
+          <tr>
+            <td><code>qwen2.5:7b</code></td>
+            <td>~5&nbsp;GB</td>
+            <td>stronger answers if you have the RAM</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Any GGUF on HuggingFace works too: <code>ollama pull hf.co/&lt;user&gt;/&lt;repo&gt;</code>.
+      </p>
 
-  <h2>Step 3 — allow the Crisp origin on your daemon</h2>
-  <p>Ollama only accepts browser requests from origins it trusts. Localhost is trusted by default — which is why local dev needs no config — but a deployed Crisp origin is not, so you opt in once with the <code>OLLAMA_ORIGINS</code> environment variable.</p>
-  <p>The fastest way to see it work:</p>
-  <pre><code>OLLAMA_ORIGINS=https://&lt;your-crisp-domain&gt; ollama serve</code></pre>
-  <p>Crisp's model picker shows this exact command with the real origin filled in — open the picker and copy it from there rather than typing the domain by hand.</p>
-  <p>That command lasts until you close the terminal. To make it stick:</p>
-  <ul>
-    <li><strong>macOS (Ollama.app)</strong>:
-      <pre><code>launchctl setenv OLLAMA_ORIGINS "https://&lt;your-crisp-domain&gt;"</code></pre>
-      Then quit and restart Ollama from the menu bar.</li>
-    <li><strong>Windows</strong>: Settings → search "environment variables" → add a <em>user</em> variable named <code>OLLAMA_ORIGINS</code> with value <code>https://&lt;your-crisp-domain&gt;</code>. Quit Ollama from the tray and relaunch it.</li>
-    <li><strong>Linux (systemd service)</strong>:
-      <pre><code>sudo systemctl edit ollama</code></pre>
-      Add:
-      <pre><code>[Service]
+      <h2>Step 3 — allow the Crisp origin on your daemon</h2>
+      <p>
+        Ollama only accepts browser requests from origins it trusts. Localhost is trusted by default
+        — which is why local dev needs no config — but a deployed Crisp origin is not, so you opt in
+        once with the <code>OLLAMA_ORIGINS</code> environment variable.
+      </p>
+      <p>The fastest way to see it work:</p>
+      <pre><code>OLLAMA_ORIGINS=https://&lt;your-crisp-domain&gt; ollama serve</code></pre>
+      <p>
+        Crisp's model picker shows this exact command with the real origin filled in — open the
+        picker and copy it from there rather than typing the domain by hand.
+      </p>
+      <p>That command lasts until you close the terminal. To make it stick:</p>
+      <ul>
+        <li>
+          <strong>macOS (Ollama.app)</strong>:
+          <pre><code>launchctl setenv OLLAMA_ORIGINS "https://&lt;your-crisp-domain&gt;"</code></pre>
+          Then quit and restart Ollama from the menu bar.
+        </li>
+        <li>
+          <strong>Windows</strong>: Settings → search "environment variables" → add a
+          <em>user</em> variable named <code>OLLAMA_ORIGINS</code> with value
+          <code>https://&lt;your-crisp-domain&gt;</code>. Quit Ollama from the tray and relaunch it.
+        </li>
+        <li>
+          <strong>Linux (systemd service)</strong>:
+          <pre><code>sudo systemctl edit ollama</code></pre>
+          Add:
+          <pre><code>[Service]
 Environment="OLLAMA_ORIGINS=https://&lt;your-crisp-domain&gt;"</code></pre>
-      Then:
-      <pre><code>sudo systemctl restart ollama</code></pre></li>
-  </ul>
-  <p>Multiple origins are comma-separated: <code>OLLAMA_ORIGINS=https://a.example.com,https://b.example.com</code>.</p>
+          Then:
+          <pre><code>sudo systemctl restart ollama</code></pre>
+        </li>
+      </ul>
+      <p>
+        Multiple origins are comma-separated:
+        <code>OLLAMA_ORIGINS=https://a.example.com,https://b.example.com</code>.
+      </p>
 
-  <h2>Step 4 — the browser prompt</h2>
-  <p>On an HTTPS deployment, Chromium-based browsers (Chrome, Edge, Brave, Arc) ask once for permission before a page may talk to your local network — that's Private Network Access doing its job. Click <strong>Allow</strong>; the page is only reaching your own Ollama on <code>localhost:11434</code>. Firefox doesn't currently gate this, so there's nothing to click. Safari and macOS may show their own Local Network permission dialog — allow that too.</p>
+      <h2>Step 4 — the browser prompt</h2>
+      <p>
+        On an HTTPS deployment, Chromium-based browsers (Chrome, Edge, Brave, Arc) ask once for
+        permission before a page may talk to your local network — that's Private Network Access
+        doing its job. Click <strong>Allow</strong>; the page is only reaching your own Ollama on
+        <code>localhost:11434</code>. Firefox doesn't currently gate this, so there's nothing to
+        click. Safari and macOS may show their own Local Network permission dialog — allow that too.
+      </p>
 
-  <h2>Step 5 — use it</h2>
-  <p>Open the model picker in Crisp. Your models appear with a <strong>local</strong> badge and ids like <code>byo/llama3.2:3b</code> — pick one and chat. Streaming, stop, regenerate, and feedback all work exactly as they do with server models.</p>
-  <p>The picker re-checks your daemon every time you open it. Just pulled a new model? Close the picker and reopen it — no reload needed.</p>
+      <h2>Step 5 — use it</h2>
+      <p>
+        Open the model picker in Crisp. Your models appear with a <strong>local</strong> badge and
+        ids like <code>byo/llama3.2:3b</code> — pick one and chat. Streaming, stop, regenerate, and
+        feedback all work exactly as they do with server models.
+      </p>
+      <p>
+        The picker re-checks your daemon every time you open it. Just pulled a new model? Close the
+        picker and reopen it — no reload needed.
+      </p>
 
-  <h2>Troubleshooting</h2>
-  <table>
-    <thead><tr><th>symptom</th><th>fix</th></tr></thead>
-    <tbody>
-      <tr>
-        <td>No local models in the picker</td>
-        <td>Your daemon isn't running — start the Ollama app, or run <code>ollama serve</code>. If it <em>is</em> running, the origin probably isn't allowed yet: do step&nbsp;3, then reopen the picker.</td>
-      </tr>
-      <tr>
-        <td>Still nothing, daemon and origin both fine</td>
-        <td>You may have denied the browser's local-network prompt. Re-allow it in the browser's site settings for the Crisp domain, then reload.</td>
-      </tr>
-      <tr>
-        <td>403 errors from Ollama</td>
-        <td>An <code>OLLAMA_ORIGINS</code> typo. The value must match the page's origin <em>exactly</em> — scheme included, no trailing slash. <code>https://&lt;your-crisp-domain&gt;</code>, not <code>&lt;your-crisp-domain&gt;</code> or <code>https://&lt;your-crisp-domain&gt;/</code>.</td>
-      </tr>
-      <tr>
-        <td>Requests never reach the daemon</td>
-        <td>Antivirus or a firewall blocking port 11434 locally. Allow the port, or check whether your security software proxies localhost traffic.</td>
-      </tr>
-      <tr>
-        <td>Reloaded mid-answer, the reply stopped</td>
-        <td>Expected. A local run lives in your tab, so a reload can't resume it mid-stream (server runs can). What was generated before the reload is kept.</td>
-      </tr>
-    </tbody>
-  </table>
+      <h2>Troubleshooting</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>symptom</th>
+            <th>fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No local models in the picker</td>
+            <td>
+              Your daemon isn't running — start the Ollama app, or run <code>ollama serve</code>. If
+              it <em>is</em> running, the origin probably isn't allowed yet: do step&nbsp;3, then
+              reopen the picker.
+            </td>
+          </tr>
+          <tr>
+            <td>Still nothing, daemon and origin both fine</td>
+            <td>
+              You may have denied the browser's local-network prompt. Re-allow it in the browser's
+              site settings for the Crisp domain, then reload.
+            </td>
+          </tr>
+          <tr>
+            <td>403 errors from Ollama</td>
+            <td>
+              An <code>OLLAMA_ORIGINS</code> typo. The value must match the page's origin
+              <em>exactly</em> — scheme included, no trailing slash.
+              <code>https://&lt;your-crisp-domain&gt;</code>, not
+              <code>&lt;your-crisp-domain&gt;</code> or
+              <code>https://&lt;your-crisp-domain&gt;/</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Requests never reach the daemon</td>
+            <td>
+              Antivirus or a firewall blocking port 11434 locally. Allow the port, or check whether
+              your security software proxies localhost traffic.
+            </td>
+          </tr>
+          <tr>
+            <td>Reloaded mid-answer, the reply stopped</td>
+            <td>
+              Expected. A local run lives in your tab, so a reload can't resume it mid-stream
+              (server runs can). What was generated before the reload is kept.
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-  <p class="note">One last note: the <code>&lt;your-crisp-domain&gt;</code> placeholders in this page are illustrative. The copy button in the model picker gives you the exact command with the real origin — use that.</p>
-</main>
-</body>
+      <p class="note">
+        One last note: the <code>&lt;your-crisp-domain&gt;</code> placeholders in this page are
+        illustrative. The copy button in the model picker gives you the exact command with the real
+        origin — use that.
+      </p>
+    </main>
+  </body>
 </html>

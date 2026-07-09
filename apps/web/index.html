@@ -13,7 +13,10 @@
          CSP COUPLING: the server hardcodes the hash of these exact bytes —
          'sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23ijVVdRJ7CCNs=' — so any byte
          change here must be mirrored in the server's CSP header. -->
-    <script>var t=localStorage.getItem("crisp:theme");if(t)document.documentElement.dataset.theme=t</script>
+    <script>
+      var t = localStorage.getItem('crisp:theme');
+      if (t) document.documentElement.dataset.theme = t;
+    </script>
     <!-- fonts are self-hosted (Fontsource variable packages, imported in main.ts) -->
   </head>
   <body>

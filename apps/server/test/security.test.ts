@@ -18,7 +18,8 @@ const inlineScripts = (html: string): string[] =>
     .map((match) => match[1] ?? '')
     .filter((body) => body.trim().length > 0);
 
-const cspHash = (script: string): string => `sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}`;
+const cspHash = (script: string): string =>
+  `sha256-${createHash('sha256').update(script, 'utf8').digest('base64')}`;
 
 describe('CSP contract with apps/web', () => {
   it('hash-allows every inline script index.html ships', () => {
@@ -36,7 +37,8 @@ describe('CSP contract with apps/web', () => {
   it('pins the agreed theme-snippet hash and carries it in script-src', () => {
     // The exact bytes frontend committed to (lead's spec) — if the snippet
     // drifts, the test above fails with the replacement hash.
-    const agreed = 'var t=localStorage.getItem("crisp:theme");if(t)document.documentElement.dataset.theme=t';
+    const agreed =
+      'var t=localStorage.getItem("crisp:theme");if(t)document.documentElement.dataset.theme=t';
     expect(cspHash(agreed)).toBe('sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23ijVVdRJ7CCNs=');
     for (const hash of CSP_INLINE_SCRIPT_HASHES) {
       expect(CSP_DIRECTIVES.scriptSrc).toContain(`'${hash}'`);
@@ -45,7 +47,11 @@ describe('CSP contract with apps/web', () => {
 
   it('keeps CSP pinned to the reviewed policy', () => {
     expect(CSP_DIRECTIVES.defaultSrc).toEqual(["'none'"]);
-    expect(CSP_DIRECTIVES.connectSrc).toEqual(["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434']);
+    expect(CSP_DIRECTIVES.connectSrc).toEqual([
+      "'self'",
+      'http://localhost:11434',
+      'http://127.0.0.1:11434',
+    ]);
     // data: fonts — Vite inlines small font subsets into the CSS as data: URIs.
     expect(CSP_DIRECTIVES.fontSrc).toEqual(["'self'", 'data:']);
     expect(CSP_DIRECTIVES.frameAncestors).toEqual(["'none'"]);

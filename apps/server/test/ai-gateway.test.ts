@@ -21,7 +21,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@crisp/ai', () => ({ chat: mocks.chat }));
 vi.mock('@crisp/ai/anthropic', () => ({ createAnthropicChat: mocks.createAnthropicChat }));
 vi.mock('@crisp/ai/openai', () => ({ createOpenaiChat: mocks.createOpenaiChat }));
-vi.mock('@crisp/ai/openai/compatible', () => ({ openaiCompatibleText: mocks.openaiCompatibleText }));
+vi.mock('@crisp/ai/openai/compatible', () => ({
+  openaiCompatibleText: mocks.openaiCompatibleText,
+}));
 
 const model = (id: string, provider = 'Anthropic'): Model => ({
   id,
@@ -136,7 +138,9 @@ describe('failure paths emit typed RUN_ERROR events instead of throwing (ModelGa
 
   it('unknown provider id: yields RUN_ERROR, never throws', async () => {
     const gateway = new AiModelGateway(loadEnv({}));
-    const events = await collect(gateway.startRun(options('mystery/model-x', { provider: 'Mystery' })));
+    const events = await collect(
+      gateway.startRun(options('mystery/model-x', { provider: 'Mystery' })),
+    );
     expect(events).toHaveLength(1);
     expect(events[0]!.type).toBe('RUN_ERROR');
     expect(events[0]!.message).toContain('Unknown provider "mystery"');
@@ -149,7 +153,9 @@ describe('failure paths emit typed RUN_ERROR events instead of throwing (ModelGa
       yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'never delivered' };
     });
     const gateway = new AiModelGateway(loadEnv({ OPENAI_API_KEY: 'k' }));
-    const events = await collect(gateway.startRun(options('openai/gpt-4o-mini', { provider: 'OpenAI' })));
+    const events = await collect(
+      gateway.startRun(options('openai/gpt-4o-mini', { provider: 'OpenAI' })),
+    );
 
     expect(events.map((e) => e.type)).toEqual(['TEXT_MESSAGE_CONTENT', 'RUN_ERROR']);
     const error = events[1]!;
@@ -164,7 +170,9 @@ describe('failure paths emit typed RUN_ERROR events instead of throwing (ModelGa
       yield { type: 'RUN_ERROR', message: 'Request failed', code: 'invalid_api_key' };
     });
     const gateway = new AiModelGateway(loadEnv({ OPENAI_API_KEY: 'k' }));
-    const events = await collect(gateway.startRun(options('openai/gpt-4o-mini', { provider: 'OpenAI' })));
+    const events = await collect(
+      gateway.startRun(options('openai/gpt-4o-mini', { provider: 'OpenAI' })),
+    );
     expect(events[0]!.code).toBe('auth_failed');
   });
 
@@ -186,7 +194,9 @@ describe('abort hygiene', () => {
   it('propagates an external abort to the inner controller and rethrows', async () => {
     const controller = new AbortController();
     let innerSignal: AbortSignal | undefined;
-    mocks.chat.mockImplementation(async function* (arg: { abortController: AbortController }): AsyncGenerator<RunEvent> {
+    mocks.chat.mockImplementation(async function* (arg: {
+      abortController: AbortController;
+    }): AsyncGenerator<RunEvent> {
       innerSignal = arg.abortController.signal;
       yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'first' };
       controller.abort();
@@ -194,7 +204,9 @@ describe('abort hygiene', () => {
     });
 
     const gateway = new AiModelGateway(loadEnv({ ANTHROPIC_API_KEY: 'k' }));
-    const stream = gateway.startRun(options('anthropic/claude-haiku-4-5', { signal: controller.signal }));
+    const stream = gateway.startRun(
+      options('anthropic/claude-haiku-4-5', { signal: controller.signal }),
+    );
 
     // A stop is the consumer's doing: the gateway rethrows instead of
     // emitting RUN_ERROR, so the run manager can persist the partial.
@@ -208,7 +220,9 @@ describe('abort hygiene', () => {
     const remove = vi.spyOn(controller.signal, 'removeEventListener');
 
     const gateway = new AiModelGateway(loadEnv({ ANTHROPIC_API_KEY: 'k' }));
-    await collect(gateway.startRun(options('anthropic/claude-haiku-4-5', { signal: controller.signal })));
+    await collect(
+      gateway.startRun(options('anthropic/claude-haiku-4-5', { signal: controller.signal })),
+    );
 
     expect(add).toHaveBeenCalledTimes(1);
     expect(remove).toHaveBeenCalledTimes(1);

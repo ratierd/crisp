@@ -18,7 +18,9 @@ test.describe('Chat flows over @crisp/ai (Demo model)', () => {
     await expect(page.getByText(/took .+ · Demo/)).toBeVisible({ timeout: 20_000 });
   });
 
-  test('stop mid-stream, then regenerate replaces the partial with a fresh answer', async ({ page }) => {
+  test('stop mid-stream, then regenerate replaces the partial with a fresh answer', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByPlaceholder('Write a message…').fill('walk me through markdown');
     await page.keyboard.press('Enter');
@@ -52,7 +54,9 @@ test.describe('Chat flows over @crisp/ai (Demo model)', () => {
     await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
   });
 
-  test('a failing model shows the typed error card; retry after switching topic recovers', async ({ page }) => {
+  test('a failing model shows the typed error card; retry after switching topic recovers', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByPlaceholder('Write a message…').fill('please error:provider_unavailable now');
     await page.keyboard.press('Enter');

@@ -16,17 +16,26 @@ interface OllamaChunk {
  * the user's own daemon. The response is NDJSON: one chunk
  * per line, a final `done: true` line carrying token counts.
  */
-export const createOllamaChat = (model: string, baseUrl = 'http://localhost:11434'): TextAdapter => ({
+export const createOllamaChat = (
+  model: string,
+  baseUrl = 'http://localhost:11434',
+): TextAdapter => ({
   name: 'ollama',
   model,
-  async *chatStream({ messages, systemPrompts, signal }: AdapterRequest): AsyncIterable<AdapterEvent> {
+  async *chatStream({
+    messages,
+    systemPrompts,
+    signal,
+  }: AdapterRequest): AsyncIterable<AdapterEvent> {
     const response = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         model,
         messages: [
-          ...(systemPrompts && systemPrompts.length > 0 ? [{ role: 'system', content: systemPrompts.join('\n') }] : []),
+          ...(systemPrompts && systemPrompts.length > 0
+            ? [{ role: 'system', content: systemPrompts.join('\n') }]
+            : []),
           ...messages.map((m) => ({ role: m.role, content: m.content })),
         ],
         stream: true,
@@ -50,7 +59,13 @@ export const createOllamaChat = (model: string, baseUrl = 'http://localhost:1143
           type: 'finish',
           finishReason: chunk.done_reason ?? 'stop',
           ...(promptTokens > 0 || completionTokens > 0
-            ? { usage: { promptTokens, completionTokens, totalTokens: promptTokens + completionTokens } }
+            ? {
+                usage: {
+                  promptTokens,
+                  completionTokens,
+                  totalTokens: promptTokens + completionTokens,
+                },
+              }
             : {}),
         };
         return;

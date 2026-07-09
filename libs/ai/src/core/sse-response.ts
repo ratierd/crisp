@@ -13,7 +13,10 @@ export interface SseResponseInit {
  * RUN_ERROR frame so the client hears about the failure in-band instead of a
  * truncated connection.
  */
-export const toServerSentEventsResponse = (stream: AsyncIterable<StreamChunk>, init: SseResponseInit = {}): Response => {
+export const toServerSentEventsResponse = (
+  stream: AsyncIterable<StreamChunk>,
+  init: SseResponseInit = {},
+): Response => {
   const headers = new Headers({
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',

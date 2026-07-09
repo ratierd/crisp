@@ -54,7 +54,8 @@ export const clientIp = (c: Context): string => {
 const RETRYABLE_COPY = 'Too many requests. Give it a moment and try again.';
 let lastFailOpenWarn = 0;
 
-export const rateLimit = (store: TokenBucketStore, name: RateRuleName, rule: RateRule): MiddlewareHandler =>
+export const rateLimit =
+  (store: TokenBucketStore, name: RateRuleName, rule: RateRule): MiddlewareHandler =>
   async (c, next) => {
     let decision: RateDecision;
     try {
@@ -88,7 +89,10 @@ export const drainBucket = (
   if (tokens >= 1) {
     return { tokens: tokens - 1, decision: { allowed: true, retryAfterMs: 0 } };
   }
-  return { tokens, decision: { allowed: false, retryAfterMs: Math.ceil((1 - tokens) / refillPerMs) } };
+  return {
+    tokens,
+    decision: { allowed: false, retryAfterMs: Math.ceil((1 - tokens) / refillPerMs) },
+  };
 };
 
 /** In-memory token buckets: unit tests and single-process fallbacks. */

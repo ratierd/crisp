@@ -45,7 +45,12 @@ const startResize = (event: PointerEvent) => {
   >
     <div class="header">
       <span class="wordmark">Crisp</span>
-      <button class="collapse" type="button" aria-label="Collapse sidebar" @click="store.sidebarOpen = false">
+      <button
+        class="collapse"
+        type="button"
+        aria-label="Collapse sidebar"
+        @click="store.sidebarOpen = false"
+      >
         «
       </button>
     </div>

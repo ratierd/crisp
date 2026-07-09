@@ -84,7 +84,10 @@ describe('completeOpenRouterConnect', () => {
   it('returns null on a failed exchange but still consumes the attempt', async () => {
     sessionStorage.setItem(VERIFIER_KEY, 'verif-1');
     history.replaceState(null, '', '/?code=auth-1');
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 403 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 403 })),
+    );
 
     expect(await completeOpenRouterConnect()).toBeNull();
     expect(window.location.search).toBe('');
@@ -94,7 +97,10 @@ describe('completeOpenRouterConnect', () => {
   it('treats a network error as a silent failure', async () => {
     sessionStorage.setItem(VERIFIER_KEY, 'verif-1');
     history.replaceState(null, '', '/?code=auth-1');
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('offline'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new Error('offline'))),
+    );
     expect(await completeOpenRouterConnect()).toBeNull();
   });
 });

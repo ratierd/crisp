@@ -1,4 +1,4 @@
-import { defineRailway, preserve, project, redis, service, volume } from "railway/iac";
+import { defineRailway, preserve, project, redis, service, volume } from 'railway/iac';
 
 /**
  * Crisp on Railway — the whole topology, tracked in code. `railway config
@@ -13,35 +13,35 @@ import { defineRailway, preserve, project, redis, service, volume } from "railwa
  * `railway variable set LANGSMITH_API_KEY --stdin --service crisp`.
  */
 export default defineRailway(() => {
-  const Redis = redis("Redis");
+  const Redis = redis('Redis');
   // pin the Railway redis template's start command (auth + persistence);
   // without it the differ proposes unsetting it, which would break AUTH
   Redis.deploy = {
     startCommand:
       '/bin/sh -c "rm -rf $RAILWAY_VOLUME_MOUNT_PATH/lost+found/ && exec docker-entrypoint.sh redis-server --requirepass $REDIS_PASSWORD --save 60 1 --dir $RAILWAY_VOLUME_MOUNT_PATH"',
   };
-  const redisVolume = volume("redis-volume", {
-    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+  const redisVolume = volume('redis-volume', {
+    alerts: { usage: { '100': {}, '80': {}, '95': {} } },
     allowOnlineResize: true,
-    region: "sfo",
+    region: 'sfo',
     sizeMB: 500,
   });
 
   // SQLite lives here — one replica by design (ADR-0001 keeps multi-instance
   // concerns in Redis; conversation storage stays simple).
-  const crispVolume = volume("crisp-volume", {
-    alerts: { usage: { "100": {}, "80": {}, "95": {} } },
+  const crispVolume = volume('crisp-volume', {
+    alerts: { usage: { '100': {}, '80': {}, '95': {} } },
     allowOnlineResize: true,
-    region: "sfo",
+    region: 'sfo',
     sizeMB: 500,
   });
 
-  const crisp = service("crisp", {
+  const crisp = service('crisp', {
     replicas: 1,
-    healthcheck: "/api/health",
+    healthcheck: '/api/health',
     healthcheckTimeout: 120,
     volumeMounts: {
-      "/data": crispVolume,
+      '/data': crispVolume,
     },
     // All values preserve(): the plan engine can't compare declared values
     // against live ones (they render «hidden»), so literals would re-diff on
@@ -58,7 +58,7 @@ export default defineRailway(() => {
     },
   });
 
-  return project("crisp", {
+  return project('crisp', {
     resources: [crisp, Redis, redisVolume, crispVolume],
   });
 });

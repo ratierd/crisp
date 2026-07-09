@@ -40,7 +40,8 @@ export const shouldAutoDiscover = (): boolean => {
 };
 
 /** The one-time daemon config that allows this origin. Shown in the picker. */
-export const byoConnectCommand = (): string => `OLLAMA_ORIGINS=${window.location.origin} ollama serve`;
+export const byoConnectCommand = (): string =>
+  `OLLAMA_ORIGINS=${window.location.origin} ollama serve`;
 
 interface OllamaTag {
   name: string;
@@ -49,7 +50,9 @@ interface OllamaTag {
 /** Browser-side discovery of the user's own Ollama. Silent on any failure. */
 export const discoverByoModels = async (): Promise<Model[]> => {
   try {
-    const response = await fetch(`${OLLAMA_LOCAL_URL}/api/tags`, { signal: AbortSignal.timeout(1500) });
+    const response = await fetch(`${OLLAMA_LOCAL_URL}/api/tags`, {
+      signal: AbortSignal.timeout(1500),
+    });
     if (!response.ok) return [];
     const body = (await response.json()) as { models?: OllamaTag[] };
     const models: Model[] = (body.models ?? []).map((tag) => ({
@@ -103,8 +106,9 @@ const textOf = (message: WireLike): string => {
 
 const toHistory = (messages: WireLike[]): ByoRunRequest['history'] =>
   messages
-    .filter((m): m is WireLike & { role: 'user' | 'assistant' | 'system' } =>
-      m.role === 'user' || m.role === 'assistant' || m.role === 'system',
+    .filter(
+      (m): m is WireLike & { role: 'user' | 'assistant' | 'system' } =>
+        m.role === 'user' || m.role === 'assistant' || m.role === 'system',
     )
     .map((m) => ({ role: m.role, content: textOf(m) }))
     .filter((m) => m.content.length > 0);
@@ -130,7 +134,12 @@ const trailingUserMessage = (messages: WireLike[]): Message | undefined => {
  * server — persistence happens *before* RUN_FINISHED is released so the
  * sidebar refresh that follows sees the conversation.
  */
-async function* runByoModel(model: Model, wireMessages: WireLike[], signal: AbortSignal | undefined, threadId: string): AsyncIterable<Chunk> {
+async function* runByoModel(
+  model: Model,
+  wireMessages: WireLike[],
+  signal: AbortSignal | undefined,
+  threadId: string,
+): AsyncIterable<Chunk> {
   // client-minted UUID: it becomes the LangSmith run id and Feedback anchor
   const runId = crypto.randomUUID();
   const history = toHistory(wireMessages);
@@ -193,7 +202,8 @@ async function* runByoModel(model: Model, wireMessages: WireLike[], signal: Abor
         tokenCount += 1;
       }
       if (chunk.type === 'RUN_FINISHED') {
-        if (chunk.usage && typeof chunk.usage === 'object') usage = chunk.usage as ByoRunRequest['usage'];
+        if (chunk.usage && typeof chunk.usage === 'object')
+          usage = chunk.usage as ByoRunRequest['usage'];
         await report('completed');
       }
       if (chunk.type === 'RUN_ERROR') {
@@ -234,7 +244,12 @@ export const crispConnection = (selectedModel: () => Model | null): ConnectConne
     connect(messages, data, abortSignal, runContext) {
       const model = selectedModel();
       if (model && isByoModelId(model.id) && runContext) {
-        return runByoModel(model, messages as WireLike[], abortSignal, runContext.threadId) as AsyncIterable<StreamChunk>;
+        return runByoModel(
+          model,
+          messages as WireLike[],
+          abortSignal,
+          runContext.threadId,
+        ) as AsyncIterable<StreamChunk>;
       }
       return sse.connect(messages, data, abortSignal, runContext);
     },

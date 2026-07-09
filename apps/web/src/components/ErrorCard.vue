@@ -5,33 +5,35 @@ import type { RunErrorKind } from '@crisp/contracts';
 const props = defineProps<{ kind: RunErrorKind; provider: string }>();
 defineEmits<{ retry: [] }>();
 
-const CATALOG: Record<RunErrorKind, { glyph: string; title: string; body: (p: string) => string }> = {
-  provider_unavailable: {
-    glyph: '⊘',
-    title: 'Provider unreachable',
-    body: (p) => `Crisp couldn't reach ${p}. Check that it's running and reachable, then retry.`,
-  },
-  auth_failed: {
-    glyph: '✕',
-    title: 'Authentication failed',
-    body: (p) => `${p} rejected the request — the API key looks missing or invalid. Fix the key, then retry.`,
-  },
-  rate_limited: {
-    glyph: '◔',
-    title: 'Rate limited',
-    body: (p) => `${p} asked us to slow down. Give it a few seconds, then retry.`,
-  },
-  aborted: {
-    glyph: '▪',
-    title: 'Run stopped',
-    body: () => 'The run was stopped before the first token arrived. Nothing was written.',
-  },
-  unknown: {
-    glyph: '?',
-    title: 'Something went wrong',
-    body: () => 'An unexpected error ended this run. Retrying usually works.',
-  },
-};
+const CATALOG: Record<RunErrorKind, { glyph: string; title: string; body: (p: string) => string }> =
+  {
+    provider_unavailable: {
+      glyph: '⊘',
+      title: 'Provider unreachable',
+      body: (p) => `Crisp couldn't reach ${p}. Check that it's running and reachable, then retry.`,
+    },
+    auth_failed: {
+      glyph: '✕',
+      title: 'Authentication failed',
+      body: (p) =>
+        `${p} rejected the request — the API key looks missing or invalid. Fix the key, then retry.`,
+    },
+    rate_limited: {
+      glyph: '◔',
+      title: 'Rate limited',
+      body: (p) => `${p} asked us to slow down. Give it a few seconds, then retry.`,
+    },
+    aborted: {
+      glyph: '▪',
+      title: 'Run stopped',
+      body: () => 'The run was stopped before the first token arrived. Nothing was written.',
+    },
+    unknown: {
+      glyph: '?',
+      title: 'Something went wrong',
+      body: () => 'An unexpected error ended this run. Retrying usually works.',
+    },
+  };
 
 const entry = computed(() => CATALOG[props.kind]);
 </script>
@@ -45,7 +47,9 @@ const entry = computed(() => CATALOG[props.kind]);
         <span class="kind">{{ kind }}</span>
       </div>
       <p class="body">{{ entry.body(provider) }}</p>
-      <button v-if="kind !== 'aborted'" class="retry" type="button" @click="$emit('retry')">Retry</button>
+      <button v-if="kind !== 'aborted'" class="retry" type="button" @click="$emit('retry')">
+        Retry
+      </button>
     </div>
   </div>
 </template>

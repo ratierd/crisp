@@ -10,7 +10,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@crisp/contracts': fileURLToPath(new URL('../../libs/contracts/src/index.ts', import.meta.url)),
+      '@crisp/contracts': fileURLToPath(
+        new URL('../../libs/contracts/src/index.ts', import.meta.url),
+      ),
     },
   },
   server: {

@@ -84,42 +84,42 @@ import {
   project,
   redis,
   service,
-} from "railway/iac";
+} from 'railway/iac';
 ```
 
 Minimal local service:
 
 ```ts
-const web = service("web", {
-  build: "bun run build",
-  start: "NODE_ENV=production bun src/index.ts",
+const web = service('web', {
+  build: 'bun run build',
+  start: 'NODE_ENV=production bun src/index.ts',
 });
 ```
 
 GitHub service:
 
 ```ts
-const web = service("web", {
-  source: github("owner/repo", { branch: "main" }),
-  build: "pnpm run build",
-  start: "pnpm start",
+const web = service('web', {
+  source: github('owner/repo', { branch: 'main' }),
+  build: 'pnpm run build',
+  start: 'pnpm start',
 });
 ```
 
 Docker image service:
 
 ```ts
-const worker = service("worker", {
-  source: image("ghcr.io/acme/worker:latest"),
+const worker = service('worker', {
+  source: image('ghcr.io/acme/worker:latest'),
 });
 ```
 
 Database reference:
 
 ```ts
-const db = postgres("postgres");
+const db = postgres('postgres');
 
-const web = service("web", {
+const web = service('web', {
   env: {
     DATABASE_URL: db.env.DATABASE_URL,
   },
@@ -129,13 +129,13 @@ const web = service("web", {
 Service-to-service reference:
 
 ```ts
-const api = service("api", {
+const api = service('api', {
   env: {
     INTERNAL_TOKEN: preserve(),
   },
 });
 
-const web = service("web", {
+const web = service('web', {
   env: {
     API_TOKEN: api.env.INTERNAL_TOKEN,
     API_HOST: api.env.RAILWAY_PRIVATE_DOMAIN,
@@ -146,15 +146,15 @@ const web = service("web", {
 Custom domains:
 
 ```ts
-const web = service("web", {
-  domains: ["app.example.com"],
+const web = service('web', {
+  domains: ['app.example.com'],
 });
 ```
 
 Replicas:
 
 ```ts
-const web = service("web", {
+const web = service('web', {
   replicas: 3,
 });
 ```
@@ -162,10 +162,10 @@ const web = service("web", {
 Advanced placement:
 
 ```ts
-const web = service("web", {
+const web = service('web', {
   replicas: {
-    "us-west2": 2,
-    "europe-west4": 1,
+    'us-west2': 2,
+    'europe-west4': 1,
   },
 });
 ```
@@ -173,29 +173,29 @@ const web = service("web", {
 Groups:
 
 ```ts
-const api = service("api");
-const worker = service("worker");
-const backend = group("Backend", [api, worker]);
+const api = service('api');
+const worker = service('worker');
+const backend = group('Backend', [api, worker]);
 ```
 
 Bucket:
 
 ```ts
-const media = bucket("media", { region: "iad" });
+const media = bucket('media', { region: 'iad' });
 ```
 
 Project shape:
 
 ```ts
 export default defineRailway(() => {
-  const db = postgres("postgres");
-  const web = service("web", {
+  const db = postgres('postgres');
+  const web = service('web', {
     env: {
       DATABASE_URL: db.env.DATABASE_URL,
     },
   });
 
-  return project("my-app", {
+  return project('my-app', {
     resources: [db, web],
   });
 });

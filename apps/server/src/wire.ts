@@ -36,7 +36,10 @@ export const wireText = (message: WireLike): string => {
 export const toGatewayHistory = (wireMessages: unknown[]): GatewayMessage[] =>
   (wireMessages as WireLike[])
     .filter((message) => typeof message.role === 'string' && ANCHOR_ROLES.has(message.role))
-    .map((message) => ({ role: message.role as GatewayMessage['role'], content: wireText(message) }))
+    .map((message) => ({
+      role: message.role as GatewayMessage['role'],
+      content: wireText(message),
+    }))
     .filter((message) => message.content.length > 0);
 
 /** The trailing user message of the request, as a persistable Message. */

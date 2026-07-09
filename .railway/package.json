@@ -1,4 +1,4 @@
 {
-  "//": "Makes the IaC runner treat railway.ts as ESM so `railway/iac` resolves to its ESM build (the CJS path breaks under the runner's cache-busting query strings).",
-  "type": "module"
+  "type": "module",
+  "//": "Makes the IaC runner treat railway.ts as ESM so `railway/iac` resolves to its ESM build (the CJS path breaks under the runner's cache-busting query strings)."
 }

@@ -47,7 +47,9 @@ export async function* chat(options: ChatOptions): AsyncGenerator<StreamChunk> {
   try {
     const stream = adapter.chatStream({
       messages: options.messages,
-      ...(options.systemPrompts && options.systemPrompts.length > 0 ? { systemPrompts: options.systemPrompts } : {}),
+      ...(options.systemPrompts && options.systemPrompts.length > 0
+        ? { systemPrompts: options.systemPrompts }
+        : {}),
       ...(signal ? { signal } : {}),
     });
     for await (const event of stream) {
@@ -55,9 +57,21 @@ export async function* chat(options: ChatOptions): AsyncGenerator<StreamChunk> {
         if (event.delta.length === 0) continue;
         if (!started) {
           started = true;
-          yield { type: 'TEXT_MESSAGE_START', messageId, role: 'assistant', model, timestamp: Date.now() };
+          yield {
+            type: 'TEXT_MESSAGE_START',
+            messageId,
+            role: 'assistant',
+            model,
+            timestamp: Date.now(),
+          };
         }
-        yield { type: 'TEXT_MESSAGE_CONTENT', messageId, delta: event.delta, model, timestamp: Date.now() };
+        yield {
+          type: 'TEXT_MESSAGE_CONTENT',
+          messageId,
+          delta: event.delta,
+          model,
+          timestamp: Date.now(),
+        };
       } else {
         if (event.finishReason !== undefined) finishReason = event.finishReason;
         if (event.usage !== undefined) usage = event.usage;

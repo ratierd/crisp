@@ -34,7 +34,8 @@ export class LangsmithTracingGateway implements ModelGateway {
 
     try {
       for await (const event of this.inner.startRun(options)) {
-        if (event.type === 'TEXT_MESSAGE_CONTENT' && typeof event.delta === 'string') text += event.delta;
+        if (event.type === 'TEXT_MESSAGE_CONTENT' && typeof event.delta === 'string')
+          text += event.delta;
         if (event.type === 'RUN_FINISHED' && event.usage && typeof event.usage === 'object') {
           usage = event.usage as TraceUsage;
         }

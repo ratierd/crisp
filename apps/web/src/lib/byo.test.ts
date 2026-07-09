@@ -43,7 +43,12 @@ interface Chunk {
 /** Drives the browser-side gateway through the app's connection adapter. */
 const runByo = (wireMessages: unknown[], signal?: AbortSignal) => {
   const adapter = crispConnection(() => byoModel) as unknown as {
-    connect: (m: unknown, d: unknown, s?: AbortSignal, ctx?: { threadId: string }) => AsyncIterable<Chunk>;
+    connect: (
+      m: unknown,
+      d: unknown,
+      s?: AbortSignal,
+      ctx?: { threadId: string },
+    ) => AsyncIterable<Chunk>;
   };
   return adapter.connect(wireMessages, undefined, signal, { threadId: 'conv-1' });
 };
@@ -54,7 +59,11 @@ const collect = async (events: AsyncIterable<Chunk>) => {
   return out;
 };
 
-const userWire = (content: string) => ({ id: 'u-1', role: 'user', parts: [{ type: 'text', content }] });
+const userWire = (content: string) => ({
+  id: 'u-1',
+  role: 'user',
+  parts: [{ type: 'text', content }],
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -86,24 +95,42 @@ describe('shouldAutoDiscover on a deployed origin', () => {
 
 describe('discoverByoModels', () => {
   it('maps /api/tags into byo/ models and remembers the success', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ models: [{ name: 'llama3.2:3b' }, { name: 'qwen2.5:7b' }] })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({ models: [{ name: 'llama3.2:3b' }, { name: 'qwen2.5:7b' }] }),
+      ),
+    );
     const models = await discoverByoModels();
     expect(models.map((m) => m.id)).toEqual(['byo/llama3.2:3b', 'byo/qwen2.5:7b']);
-    expect(models[0]).toMatchObject({ provider: 'Ollama (yours)', provenance: 'local', available: true });
+    expect(models[0]).toMatchObject({
+      provider: 'Ollama (yours)',
+      provenance: 'local',
+      available: true,
+    });
     expect(localStorage.getItem(CONNECTED_KEY)).toBe('1');
     expect(vi.mocked(fetch).mock.calls[0]![0]).toBe('http://localhost:11434/api/tags');
   });
 
   it('is silent on network failure and does not set the connected flag', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('CORS'))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new Error('CORS'))),
+    );
     expect(await discoverByoModels()).toEqual([]);
     expect(localStorage.getItem(CONNECTED_KEY)).toBeNull();
   });
 
   it('treats a non-ok response and an empty tag list as not connected', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 500 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('nope', { status: 500 })),
+    );
     expect(await discoverByoModels()).toEqual([]);
-    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ models: [] })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ models: [] })),
+    );
     expect(await discoverByoModels()).toEqual([]);
     expect(localStorage.getItem(CONNECTED_KEY)).toBeNull();
   });
@@ -146,7 +173,10 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
     expect(order).toEqual(['TEXT_MESSAGE_CONTENT', 'reported', 'RUN_FINISHED']);
     expect(mocks.postByoRun).toHaveBeenCalledTimes(1); // the finally-path must not double-report
 
-    const [threadId, report] = mocks.postByoRun.mock.calls[0]! as unknown as [string, Record<string, unknown>];
+    const [threadId, report] = mocks.postByoRun.mock.calls[0]! as unknown as [
+      string,
+      Record<string, unknown>,
+    ];
     expect(threadId).toBe('conv-1');
     expect(report).toMatchObject({
       modelId: 'byo/llama3.2:3b',
@@ -154,7 +184,11 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
       outcome: 'completed',
       history: [{ role: 'user', content: 'hello there' }],
     });
-    expect(report.userMessage).toMatchObject({ id: 'u-1', role: 'user', parts: [{ type: 'text', content: 'hello there' }] });
+    expect(report.userMessage).toMatchObject({
+      id: 'u-1',
+      role: 'user',
+      parts: [{ type: 'text', content: 'hello there' }],
+    });
   });
 
   it('computes ttft and chunk-rate stats from the stream timeline', async () => {
@@ -181,7 +215,10 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
   it('forwards usage from RUN_FINISHED into the report', async () => {
     mocks.chat.mockImplementation(async function* (): AsyncGenerator<Chunk> {
       yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'x' };
-      yield { type: 'RUN_FINISHED', usage: { promptTokens: 3, completionTokens: 5, totalTokens: 8 } };
+      yield {
+        type: 'RUN_FINISHED',
+        usage: { promptTokens: 3, completionTokens: 5, totalTokens: 8 },
+      };
     });
     await collect(runByo([userWire('hi')]));
     const report = mocks.postByoRun.mock.calls[0]![1] as unknown as Record<string, unknown>;
@@ -220,10 +257,18 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
 
     const events = await collect(runByo([userWire('hi')]));
     expect(events.map((e) => e.type)).toEqual(['TEXT_MESSAGE_CONTENT', 'RUN_ERROR']);
-    expect(events[1]).toMatchObject({ code: 'provider_unavailable', provider: 'your Ollama', message: 'fetch failed' });
+    expect(events[1]).toMatchObject({
+      code: 'provider_unavailable',
+      provider: 'your Ollama',
+      message: 'fetch failed',
+    });
 
     const report = mocks.postByoRun.mock.calls[0]![1] as unknown as Record<string, unknown>;
-    expect(report).toMatchObject({ outcome: 'failed', error: 'fetch failed', assistantText: 'par' });
+    expect(report).toMatchObject({
+      outcome: 'failed',
+      error: 'fetch failed',
+      assistantText: 'par',
+    });
   });
 
   it('an upstream RUN_ERROR chunk is re-emitted typed and ends the stream', async () => {
@@ -234,7 +279,11 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
 
     const events = await collect(runByo([userWire('hi')]));
     expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({ type: 'RUN_ERROR', code: 'provider_unavailable', provider: 'your Ollama' });
+    expect(events[0]).toMatchObject({
+      type: 'RUN_ERROR',
+      code: 'provider_unavailable',
+      provider: 'your Ollama',
+    });
 
     const report = mocks.postByoRun.mock.calls[0]![1] as unknown as Record<string, unknown>;
     expect(report.outcome).toBe('failed');

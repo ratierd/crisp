@@ -20,7 +20,9 @@ const stubFetch = (body: string, init: ResponseInit = {}) => {
   return mock;
 };
 
-const requestOf = (mock: ReturnType<typeof vi.fn>): { url: string; init: RequestInit; body: Record<string, unknown> } => {
+const requestOf = (
+  mock: ReturnType<typeof vi.fn>,
+): { url: string; init: RequestInit; body: Record<string, unknown> } => {
   const [url, init] = mock.mock.calls[0] as [string, RequestInit];
   return { url, init, body: JSON.parse(init.body as string) as Record<string, unknown> };
 };
@@ -51,7 +53,10 @@ describe('anthropic adapter', () => {
   it('speaks the Messages API: url, auth header, version, body', async () => {
     const mock = stubFetch(happyBody);
     await collect(
-      createAnthropicChat('claude-haiku-4-5', 'key-1').chatStream({ messages: turns, systemPrompts: ['be nice', 'be terse'] }),
+      createAnthropicChat('claude-haiku-4-5', 'key-1').chatStream({
+        messages: turns,
+        systemPrompts: ['be nice', 'be terse'],
+      }),
     );
     const { url, init, body } = requestOf(mock);
     expect(url).toBe('https://api.anthropic.com/v1/messages');
@@ -68,34 +73,52 @@ describe('anthropic adapter', () => {
 
   it('normalizes the SSE stream into deltas and cumulative usage', async () => {
     stubFetch(happyBody);
-    const events = await collect(createAnthropicChat('claude-haiku-4-5', 'k').chatStream({ messages: turns }));
+    const events = await collect(
+      createAnthropicChat('claude-haiku-4-5', 'k').chatStream({ messages: turns }),
+    );
     expect(events).toEqual([
       { type: 'text-delta', delta: 'hel' },
       { type: 'text-delta', delta: 'lo' },
-      { type: 'finish', finishReason: 'stop', usage: { promptTokens: 7, completionTokens: 4, totalTokens: 11 } },
+      {
+        type: 'finish',
+        finishReason: 'stop',
+        usage: { promptTokens: 7, completionTokens: 4, totalTokens: 11 },
+      },
     ]);
   });
 
   it('a non-2xx response throws with the status and the raw provider message', async () => {
-    stubFetch(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }), {
-      status: 401,
-      statusText: 'Unauthorized',
-    });
-    await expect(collect(createAnthropicChat('m', 'bad').chatStream({ messages: turns }))).rejects.toThrow(
-      /status 401.*invalid x-api-key/,
+    stubFetch(
+      JSON.stringify({
+        type: 'error',
+        error: { type: 'authentication_error', message: 'invalid x-api-key' },
+      }),
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+      },
     );
+    await expect(
+      collect(createAnthropicChat('m', 'bad').chatStream({ messages: turns })),
+    ).rejects.toThrow(/status 401.*invalid x-api-key/);
   });
 
   it('an in-band error event throws with the provider message', async () => {
     stubFetch(sse({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }));
-    await expect(collect(createAnthropicChat('m', 'k').chatStream({ messages: turns }))).rejects.toThrow('Overloaded');
+    await expect(
+      collect(createAnthropicChat('m', 'k').chatStream({ messages: turns })),
+    ).rejects.toThrow('Overloaded');
   });
 
   it('hands the abort signal to fetch', async () => {
     const mock = stubFetch(happyBody);
     const controller = new AbortController();
-    await collect(createAnthropicChat('m', 'k').chatStream({ messages: turns, signal: controller.signal }));
-    expect((mock.mock.calls[0] as unknown as [string, RequestInit])[1].signal).toBe(controller.signal);
+    await collect(
+      createAnthropicChat('m', 'k').chatStream({ messages: turns, signal: controller.signal }),
+    );
+    expect((mock.mock.calls[0] as unknown as [string, RequestInit])[1].signal).toBe(
+      controller.signal,
+    );
   });
 });
 
@@ -136,28 +159,48 @@ describe('openai-compatible adapter', () => {
 
   it('normalizes chunks, the finish reason and the trailing usage frame', async () => {
     stubFetch(happyBody);
-    const adapter = openaiCompatibleText('m', { baseURL: 'https://api.example.com/v1', apiKey: 'k' });
+    const adapter = openaiCompatibleText('m', {
+      baseURL: 'https://api.example.com/v1',
+      apiKey: 'k',
+    });
     const events = await collect(adapter.chatStream({ messages: turns }));
     expect(events).toEqual([
       { type: 'text-delta', delta: 'hel' },
       { type: 'text-delta', delta: 'lo' },
-      { type: 'finish', finishReason: 'stop', usage: { promptTokens: 6, completionTokens: 2, totalTokens: 8 } },
+      {
+        type: 'finish',
+        finishReason: 'stop',
+        usage: { promptTokens: 6, completionTokens: 2, totalTokens: 8 },
+      },
     ]);
   });
 
   it('a mid-stream error chunk (the OpenRouter way) throws with the raw message', async () => {
     stubFetch(sse({ error: { message: 'Rate limit exceeded', code: 429 } }));
-    const adapter = openaiCompatibleText('m', { baseURL: 'https://api.example.com/v1', apiKey: 'k' });
-    await expect(collect(adapter.chatStream({ messages: turns }))).rejects.toThrow('Rate limit exceeded');
+    const adapter = openaiCompatibleText('m', {
+      baseURL: 'https://api.example.com/v1',
+      apiKey: 'k',
+    });
+    await expect(collect(adapter.chatStream({ messages: turns }))).rejects.toThrow(
+      'Rate limit exceeded',
+    );
   });
 
   it('a non-2xx response throws with the status and provider message', async () => {
-    stubFetch(JSON.stringify({ error: { message: 'Incorrect API key provided', code: 'invalid_api_key' } }), {
-      status: 401,
-      statusText: 'Unauthorized',
+    stubFetch(
+      JSON.stringify({ error: { message: 'Incorrect API key provided', code: 'invalid_api_key' } }),
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+      },
+    );
+    const adapter = openaiCompatibleText('m', {
+      baseURL: 'https://api.example.com/v1',
+      apiKey: 'bad',
     });
-    const adapter = openaiCompatibleText('m', { baseURL: 'https://api.example.com/v1', apiKey: 'bad' });
-    await expect(collect(adapter.chatStream({ messages: turns }))).rejects.toThrow(/status 401.*Incorrect API key/);
+    await expect(collect(adapter.chatStream({ messages: turns }))).rejects.toThrow(
+      /status 401.*Incorrect API key/,
+    );
   });
 });
 
@@ -176,13 +219,22 @@ describe('ollama adapter', () => {
   const happyBody = ndjson(
     { message: { role: 'assistant', content: 'hel' }, done: false },
     { message: { role: 'assistant', content: 'lo' }, done: false },
-    { message: { role: 'assistant', content: '' }, done: true, done_reason: 'stop', prompt_eval_count: 5, eval_count: 2 },
+    {
+      message: { role: 'assistant', content: '' },
+      done: true,
+      done_reason: 'stop',
+      prompt_eval_count: 5,
+      eval_count: 2,
+    },
   );
 
   it('POSTs /api/chat on the daemon with the system prompt folded in', async () => {
     const mock = stubFetch(happyBody);
     await collect(
-      createOllamaChat('llama3.2:3b', 'http://localhost:11434').chatStream({ messages: turns, systemPrompts: ['be nice'] }),
+      createOllamaChat('llama3.2:3b', 'http://localhost:11434').chatStream({
+        messages: turns,
+        systemPrompts: ['be nice'],
+      }),
     );
     const { url, body } = requestOf(mock);
     expect(url).toBe('http://localhost:11434/api/chat');
@@ -202,17 +254,28 @@ describe('ollama adapter', () => {
     expect(events).toEqual([
       { type: 'text-delta', delta: 'hel' },
       { type: 'text-delta', delta: 'lo' },
-      { type: 'finish', finishReason: 'stop', usage: { promptTokens: 5, completionTokens: 2, totalTokens: 7 } },
+      {
+        type: 'finish',
+        finishReason: 'stop',
+        usage: { promptTokens: 5, completionTokens: 2, totalTokens: 7 },
+      },
     ]);
   });
 
   it('an error line throws with the daemon message', async () => {
     stubFetch(ndjson({ error: 'model "nope" not found' }));
-    await expect(collect(createOllamaChat('nope').chatStream({ messages: turns }))).rejects.toThrow('model "nope" not found');
+    await expect(collect(createOllamaChat('nope').chatStream({ messages: turns }))).rejects.toThrow(
+      'model "nope" not found',
+    );
   });
 
   it('a non-2xx response throws with the status', async () => {
-    stubFetch(JSON.stringify({ error: 'something broke' }), { status: 500, statusText: 'Internal Server Error' });
-    await expect(collect(createOllamaChat('m').chatStream({ messages: turns }))).rejects.toThrow(/status 500.*something broke/);
+    stubFetch(JSON.stringify({ error: 'something broke' }), {
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+    await expect(collect(createOllamaChat('m').chatStream({ messages: turns }))).rejects.toThrow(
+      /status 500.*something broke/,
+    );
   });
 });

@@ -34,7 +34,11 @@ describe('chat event envelope', () => {
     const adapter = adapterOf([
       { type: 'text-delta', delta: 'hel' },
       { type: 'text-delta', delta: 'lo' },
-      { type: 'finish', finishReason: 'stop', usage: { promptTokens: 3, completionTokens: 2, totalTokens: 5 } },
+      {
+        type: 'finish',
+        finishReason: 'stop',
+        usage: { promptTokens: 3, completionTokens: 2, totalTokens: 5 },
+      },
     ]);
     const events = await collect(chat({ adapter, messages, threadId: 'conv-1', runId: 'run-1' }));
 
@@ -92,16 +96,24 @@ describe('chat edge cases', () => {
   });
 
   it('a provider throw becomes a terminal RUN_ERROR with the raw message and code', async () => {
-    const failing = Object.assign(new Error('anthropic request failed with status 429 Too Many Requests'), {
-      code: 'rate_limit_error',
-    });
+    const failing = Object.assign(
+      new Error('anthropic request failed with status 429 Too Many Requests'),
+      {
+        code: 'rate_limit_error',
+      },
+    );
     const adapter = adapterOf(async function* () {
       yield { type: 'text-delta', delta: 'par' } as AdapterEvent;
       throw failing;
     });
     const events = await collect(chat({ adapter, messages, runId: 'run-1', threadId: 'conv-1' }));
 
-    expect(events.map((e) => e.type)).toEqual(['RUN_STARTED', 'TEXT_MESSAGE_START', 'TEXT_MESSAGE_CONTENT', 'RUN_ERROR']);
+    expect(events.map((e) => e.type)).toEqual([
+      'RUN_STARTED',
+      'TEXT_MESSAGE_START',
+      'TEXT_MESSAGE_CONTENT',
+      'RUN_ERROR',
+    ]);
     expect(events.at(-1)).toMatchObject({
       runId: 'run-1',
       threadId: 'conv-1',

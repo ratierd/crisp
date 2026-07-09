@@ -31,7 +31,10 @@ export class TitleService {
       threadId: conversationId,
       messages: [
         { role: 'system', content: TITLE_PROMPT },
-        { role: 'user', content: `User: ${userText.slice(0, 500)}\n\nAssistant: ${assistantText.slice(0, 500)}` },
+        {
+          role: 'user',
+          content: `User: ${userText.slice(0, 500)}\n\nAssistant: ${assistantText.slice(0, 500)}`,
+        },
       ],
       // the same BYOK key that ran the exchange also titles it
       ...(apiKey ? { apiKey } : {}),

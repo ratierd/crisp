@@ -151,7 +151,12 @@ export class ChatClient {
     if (this.loading || text.length === 0) return;
     this.replaceMessages([
       ...this.messages,
-      { id: crypto.randomUUID(), role: 'user', parts: [{ type: 'text', content: text }], createdAt: new Date() },
+      {
+        id: crypto.randomUUID(),
+        role: 'user',
+        parts: [{ type: 'text', content: text }],
+        createdAt: new Date(),
+      },
     ]);
     await this.streamResponse();
   }
@@ -190,11 +195,16 @@ export class ChatClient {
     let assistantId: string | null = null;
 
     try {
-      const stream = this.options.connection.connect(this.messages, forwardedProps, abortController.signal, {
-        threadId: this.threadId,
-        runId: generateRunId(),
+      const stream = this.options.connection.connect(
+        this.messages,
         forwardedProps,
-      });
+        abortController.signal,
+        {
+          threadId: this.threadId,
+          runId: generateRunId(),
+          forwardedProps,
+        },
+      );
       for await (const chunk of stream) {
         this.options.onChunk?.(chunk);
         assistantId = this.apply(chunk, assistantId);

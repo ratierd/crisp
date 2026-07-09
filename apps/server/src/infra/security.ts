@@ -13,7 +13,9 @@
  * re-hashes the actual index.html — change the snippet and that test tells
  * you the new hash to put here.
  */
-export const CSP_INLINE_SCRIPT_HASHES = ['sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23ijVVdRJ7CCNs='] as const;
+export const CSP_INLINE_SCRIPT_HASHES = [
+  'sha256-PXC2MziKWi6tIzlXvm7WxLQ/VDHKRDITJJPInAVnFS4=',
+] as const;
 
 /**
  * Enforced CSP for HTML documents (frontend's spec). Notable directives:
@@ -24,7 +26,11 @@ export const CSP_INLINE_SCRIPT_HASHES = ['sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23
  */
 export const CSP_DIRECTIVES = {
   defaultSrc: ["'none'"],
-  scriptSrc: ["'self'", "'wasm-unsafe-eval'", ...CSP_INLINE_SCRIPT_HASHES.map((hash) => `'${hash}'`)],
+  scriptSrc: [
+    "'self'",
+    "'wasm-unsafe-eval'",
+    ...CSP_INLINE_SCRIPT_HASHES.map((hash) => `'${hash}'`),
+  ],
   styleSrc: ["'self'"],
   styleSrcAttr: ["'unsafe-inline'"],
   connectSrc: ["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434'],
@@ -42,7 +48,11 @@ export const CSP_DIRECTIVES = {
 export const cacheControlFor = (pathname: string): string => {
   // Vite emits content-hashed filenames under /assets — safe to cache forever.
   if (pathname.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
-  if (pathname === '/favicon.svg' || pathname === '/byo-ollama.html' || pathname === '/byo-ollama.css') {
+  if (
+    pathname === '/favicon.svg' ||
+    pathname === '/byo-ollama.html' ||
+    pathname === '/byo-ollama.css'
+  ) {
     return 'public, max-age=3600';
   }
   // index.html and the SPA fallback: revalidate on every navigation.
