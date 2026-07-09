@@ -8,7 +8,22 @@ import { useAppStore } from './stores/app';
 
 const store = useAppStore();
 const root = ref<HTMLElement | null>(null);
+const mainEl = ref<HTMLElement | null>(null);
 const chatView = ref<InstanceType<typeof ChatView> | null>(null);
+
+// The aurora only glows while the view is at (or near) the bottom of the
+// conversation — reading history, it fades out of the way. Recomputed on
+// scroll and on content changes (streaming growth, conversation switch).
+const auroraNear = ref(true);
+let auroraFrame = 0;
+const checkAurora = () => {
+  cancelAnimationFrame(auroraFrame);
+  auroraFrame = requestAnimationFrame(() => {
+    const el = mainEl.value;
+    if (!el) return;
+    auroraNear.value = el.scrollHeight - el.scrollTop - el.clientHeight < 140;
+  });
+};
 
 const running = computed(() => chatView.value?.running ?? false);
 
@@ -27,6 +42,7 @@ const onKeydown = (event: KeyboardEvent) => {
 };
 
 let observer: ResizeObserver | null = null;
+let contentObserver: MutationObserver | null = null;
 
 onMounted(() => {
   store.applyTheme();
@@ -42,11 +58,17 @@ onMounted(() => {
     store.setNarrow(width < 780);
   });
   if (root.value) observer.observe(root.value);
+  mainEl.value?.addEventListener('scroll', checkAurora, { passive: true });
+  contentObserver = new MutationObserver(checkAurora);
+  if (mainEl.value) contentObserver.observe(mainEl.value, { childList: true, subtree: true });
+  checkAurora();
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown);
   observer?.disconnect();
+  contentObserver?.disconnect();
+  cancelAnimationFrame(auroraFrame);
 });
 </script>
 
@@ -61,7 +83,7 @@ onBeforeUnmount(() => {
       <SidebarPanel v-if="store.sidebarOpen" />
       <!-- the main column is the scroll container, so the scrollbar spans the
            full viewport height; top bar and composer are sticky inside it -->
-      <main class="main scroll-region">
+      <main ref="mainEl" class="main scroll-region">
         <TopBar :running="running" />
         <ChatView
           :key="store.activeConversationId"
@@ -70,7 +92,7 @@ onBeforeUnmount(() => {
           @exchanged="onExchanged"
         />
       </main>
-      <div class="aurora" aria-hidden="true">
+      <div class="aurora" :class="{ faded: !auroraNear }" aria-hidden="true">
         <div class="aurora-layer a1" />
         <div class="aurora-layer a2" />
         <div class="aurora-layer a3" />
@@ -139,47 +161,53 @@ onBeforeUnmount(() => {
 .aurora-layer {
   position: absolute;
   /* oversized so the drift never exposes an edge */
-  inset: -30% -12%;
+  inset: -30% -16%;
   filter: blur(44px);
+  /* the wave steps aside while reading history (.faded); the ground fade
+     on ::before stays, so scrolled text is still knocked back */
+  transition: opacity 0.8s ease;
+}
+.aurora.faded .aurora-layer {
+  opacity: 0;
 }
 .aurora-layer.a1 {
   background:
     radial-gradient(48% 82% at 16% 96%, var(--wave-blue), transparent 68%),
     radial-gradient(44% 75% at 80% 100%, var(--wave-violet), transparent 70%);
-  animation: wave-a 27s ease-in-out infinite alternate;
+  animation: wave-a 18s ease-in-out infinite alternate;
 }
 .aurora-layer.a2 {
   background:
     radial-gradient(44% 78% at 64% 100%, var(--wave-pink), transparent 70%),
     radial-gradient(40% 66% at 38% 100%, var(--wave-violet), transparent 72%);
-  animation: wave-b 21s ease-in-out infinite alternate;
+  animation: wave-b 13s ease-in-out infinite alternate;
 }
 .aurora-layer.a3 {
   background: radial-gradient(34% 56% at 92% 98%, var(--wave-ember), transparent 74%);
-  animation: wave-c 34s ease-in-out infinite alternate;
+  animation: wave-c 23s ease-in-out infinite alternate;
 }
 @keyframes wave-a {
   from {
-    transform: translate3d(-4%, 2%, 0) scale(1);
+    transform: translate3d(-9%, 3%, 0) scale(1);
   }
   to {
-    transform: translate3d(5%, -3%, 0) scale(1.08);
+    transform: translate3d(9%, -5%, 0) scale(1.16);
   }
 }
 @keyframes wave-b {
   from {
-    transform: translate3d(5%, 1%, 0) scale(1.06);
+    transform: translate3d(10%, 2%, 0) scale(1.14);
   }
   to {
-    transform: translate3d(-5%, -2%, 0) scale(1);
+    transform: translate3d(-10%, -4%, 0) scale(1);
   }
 }
 @keyframes wave-c {
   from {
-    transform: translate3d(-2%, 0, 0) scale(1);
+    transform: translate3d(-6%, 1%, 0) scale(1);
   }
   to {
-    transform: translate3d(3%, -4%, 0) scale(1.12);
+    transform: translate3d(7%, -7%, 0) scale(1.2);
   }
 }
 @media (prefers-reduced-motion: reduce) {
