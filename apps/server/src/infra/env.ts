@@ -10,6 +10,8 @@ export interface Env {
   staticDir: string | null;
   /** Per-IP rate limiting; CRISP_RATE_LIMIT=off disables it (e2e, local load tests). */
   rateLimitEnabled: boolean;
+  /** The zero-key Demo model; CRISP_DEMO=off hides it (deployed instances). */
+  demoEnabled: boolean;
 }
 
 export const loadEnv = (source: Record<string, string | undefined> = process.env): Env => ({
@@ -23,4 +25,5 @@ export const loadEnv = (source: Record<string, string | undefined> = process.env
   langsmithProject: source.LANGSMITH_PROJECT || null,
   staticDir: source.STATIC_DIR || null,
   rateLimitEnabled: source.CRISP_RATE_LIMIT !== 'off',
+  demoEnabled: source.CRISP_DEMO !== 'off',
 });

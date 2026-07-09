@@ -1,19 +1,31 @@
 <script setup lang="ts">
+defineProps<{
+  /** The Demo model is the current selection — its zero-key promise holds. */
+  demoSelected: boolean;
+  /** At least one Model is usable right now (demo, key, or BYO Ollama). */
+  anyAvailable: boolean;
+}>();
 defineEmits<{ suggest: [text: string] }>();
 
+// End-customer support questions (Crisp pitches at support-agent products):
+// the highest-volume intents virtually every business sees.
 const CHIPS = [
-  "Explain OKLCH like I'm a designer",
-  'Draft a launch post for a small CLI tool',
-  'Why does serif type read better in long form?',
+  'Where is my order? It was supposed to arrive on Monday',
+  'I was charged twice for the same purchase — can I get a refund?',
+  'How do I change the shipping address on my order?',
 ];
 </script>
 
 <template>
   <div class="empty">
     <h1>Start a conversation.</h1>
-    <p>
+    <p v-if="demoSelected">
       The Demo model answers without any API keys, so your first message always works. Switch models
       from the composer whenever you're ready.
+    </p>
+    <p v-else-if="!anyAvailable">
+      Pick a model from the composer to start — connect OpenRouter in one click, use your own
+      Ollama, or paste a provider key.
     </p>
     <div class="chips">
       <button v-for="chip in CHIPS" :key="chip" type="button" @click="$emit('suggest', chip)">

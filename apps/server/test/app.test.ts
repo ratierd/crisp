@@ -102,6 +102,20 @@ describe('GET /api/models', () => {
     expect(open.some((m) => m.id === 'openrouter/anthropic/claude-sonnet-4.6')).toBe(true);
     expect(open.some((m) => m.id === 'openrouter/openai/gpt-5.2')).toBe(true);
   });
+
+  it('CRISP_DEMO=off hides the Demo model and makes it unrunnable', async () => {
+    const { app, request } = makeApp({ CRISP_DEMO: 'off' });
+
+    const { models } = (await (await app.request('/api/models')).json()) as { models: Array<Record<string, unknown>> };
+    expect(models.some((m) => m.id === 'demo/demo')).toBe(false);
+
+    const response = await request('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(chatBody('conv-1', 'hello')),
+    });
+    expect(response.status).toBe(400);
+  });
 });
 
 describe('POST /api/chat', () => {

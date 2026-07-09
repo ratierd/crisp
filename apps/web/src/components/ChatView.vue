@@ -150,8 +150,16 @@ const isEmpty = computed(
 
 // ---- actions -------------------------------------------------------------
 
+// No usable Model (deployed with the demo hidden, nothing connected yet):
+// the composer disables send and the empty state points at the connect paths.
+// Until the registry answers, sends stay allowed — otherwise a fast first
+// Enter would be dropped; the server rejects unusable models anyway.
+const modelReady = computed(
+  () => store.models.length === 0 || store.selectedModel?.available === true,
+);
+
 const send = (text: string) => {
-  if (running.value || reconnecting.value) return;
+  if (running.value || reconnecting.value || !modelReady.value) return;
   errorInfo.value = null;
   liveModelName = store.selectedModel?.displayName ?? '';
   liveByo = isByoModelId(store.selectedModelId);
@@ -319,7 +327,12 @@ defineExpose({ running });
   <div ref="chatRoot" class="chat">
     <div class="transcript">
       <div class="column">
-        <EmptyState v-if="isEmpty" @suggest="send" />
+        <EmptyState
+          v-if="isEmpty"
+          :demo-selected="store.selectedModel?.id === 'demo/demo'"
+          :any-available="store.models.length === 0 || store.models.some((m) => m.available)"
+          @suggest="send"
+        />
         <template v-else>
           <template v-for="message in view" :key="message.id">
             <MessageUser v-if="message.role === 'user'" :text="message.text" />
@@ -367,6 +380,7 @@ defineExpose({ running });
       ref="composer"
       :running="running"
       :reconnecting="reconnecting"
+      :no-model="!modelReady"
       @send="send"
       @stop="stop"
     />

@@ -6,7 +6,9 @@ Architecture and rationale live in the [README](../README.md) and
 [docs/adr/](adr/); this document is about what a user experiences.
 
 Everything below works with **zero API keys** via the built-in Demo model
-unless a flow says otherwise.
+unless a flow says otherwise. (Deployed instances hide the Demo model with
+`CRISP_DEMO=off` — there, connect OpenRouter in one click, use your own
+Ollama, or paste a provider key.)
 
 ## 1. At a glance
 

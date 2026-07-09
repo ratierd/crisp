@@ -72,7 +72,9 @@ export class ModelRegistry {
   constructor(private readonly env: Env) {}
 
   async listModels(): Promise<Model[]> {
-    return [DEMO_MODEL, ...this.remoteModels()];
+    // Registry gating doubles as run gating: find() resolves from this list,
+    // so a hidden Demo model is also unrunnable, not merely unlisted.
+    return [...(this.env.demoEnabled ? [DEMO_MODEL] : []), ...this.remoteModels()];
   }
 
   /**

@@ -2,7 +2,7 @@
 import { onMounted, ref, watch } from 'vue';
 import ModelPicker from './ModelPicker.vue';
 
-const props = defineProps<{ running: boolean; reconnecting: boolean }>();
+const props = defineProps<{ running: boolean; reconnecting: boolean; noModel?: boolean }>();
 const emit = defineEmits<{ send: [text: string]; stop: [] }>();
 
 const text = ref('');
@@ -10,7 +10,7 @@ const textarea = ref<HTMLTextAreaElement | null>(null);
 
 const send = () => {
   const trimmed = text.value.trim();
-  if (!trimmed || props.running || props.reconnecting) return;
+  if (!trimmed || props.running || props.reconnecting || props.noModel) return;
   emit('send', trimmed);
   text.value = '';
 };
@@ -41,7 +41,13 @@ defineExpose({ focus });
           ref="textarea"
           v-model="text"
           rows="1"
-          :placeholder="reconnecting ? 'Reconnecting to run…' : 'Write a message…'"
+          :placeholder="
+            reconnecting
+              ? 'Reconnecting to run…'
+              : noModel
+                ? 'Connect a model to start…'
+                : 'Write a message…'
+          "
           :disabled="reconnecting"
           @keydown="onKeydown"
         />
@@ -57,7 +63,7 @@ defineExpose({ focus });
             v-else
             class="send"
             type="button"
-            :disabled="!text.trim() || reconnecting"
+            :disabled="!text.trim() || reconnecting || noModel"
             aria-label="Send"
             @click="send"
           >
