@@ -517,6 +517,13 @@ describe('visitor scoping (crisp_sid)', () => {
     expect(first.status).toBe(200);
     // the session cookie is HttpOnly and scoped to the site
     expect(first.headers.get('set-cookie')).toMatch(/crisp_sid=[0-9a-f-]{36}.*HttpOnly/i);
+
+    // behind a TLS-terminating edge the cookie must pick up Secure from
+    // X-Forwarded-Proto — the request URL itself is plain http there
+    const edge = await app.request('/api/conversations', {
+      headers: { 'x-forwarded-proto': 'https' },
+    });
+    expect(edge.headers.get('set-cookie')).toMatch(/crisp_sid=.*Secure/i);
     await readSse(first);
     await waitFor(() => (conversations.messages.get('conv-alice')?.length ?? 0) === 2);
 

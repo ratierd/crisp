@@ -88,7 +88,11 @@ export const createApp = (deps: AppDeps) => {
     c.set('owner', sid!);
     await next();
     if (minted) {
-      const secure = new URL(c.req.url).protocol === 'https:' ? '; Secure' : '';
+      // Behind a TLS-terminating edge (Railway) the request URL is http;
+      // the edge asserts the original scheme via X-Forwarded-Proto.
+      const https =
+        new URL(c.req.url).protocol === 'https:' || c.req.header('x-forwarded-proto')?.split(',')[0]?.trim() === 'https';
+      const secure = https ? '; Secure' : '';
       c.res.headers.append(
         'set-cookie',
         `${SID_COOKIE}=${sid}; Path=/; Max-Age=${SID_MAX_AGE_SECONDS}; HttpOnly; SameSite=Lax${secure}`,
