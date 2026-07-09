@@ -1,7 +1,8 @@
 import { chat, readWireMessages, type StreamChunk } from '@crisp/ai';
 import { createOllamaChat } from '@crisp/ai/ollama';
 import { fetchServerSentEvents, type ConnectConnectionAdapter } from '@crisp/ai/client';
-import type { ByoRunRequest, Model } from '@crisp/contracts';
+import type { Model } from '@crisp/models/contracts';
+import type { ByoRunRequest } from '@crisp/runs/contracts';
 import * as api from './api';
 
 /**

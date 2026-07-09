@@ -1,4 +1,4 @@
-import type { RunEvent, StartRunOptions } from '@crisp/domain';
+import type { RunEvent, StartRunOptions } from '@crisp/runs';
 
 const SHOWCASE = `Here's a quick tour of what Crisp renders — streamed straight from the zero-key **Demo** model.
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { FakeConversationRepository, FakeRunStreamStore } from '@crisp/domain/testing';
-import type { RunStreamStore } from '@crisp/domain';
+import { FakeConversationRepository } from '@crisp/conversations/testing';
+import { FakeRunStreamStore } from '@crisp/runs/testing';
+import type { RunStreamStore } from '@crisp/runs';
 import { createApp } from '../src/app';
-import { loadEnv } from '../src/infra/env';
-import { ModelRegistry } from '../src/infra/model-registry';
+import { keyConfigFromEnv, loadEnv } from '../src/infra/env';
+import { ModelRegistry } from '@crisp/models';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
 /**
@@ -33,7 +34,7 @@ const makeApp = (runStreams: RunStreamStore = new FakeRunStreamStore()) => {
   const conversations = new FakeConversationRepository();
   const { app } = createApp({
     env,
-    registry: new ModelRegistry(env),
+    registry: new ModelRegistry(keyConfigFromEnv(env)),
     gateway: new AiModelGateway(env, { delayMs: 0 }),
     conversations,
     runStreams,

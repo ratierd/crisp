@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { RunErrorKind } from '@crisp/contracts';
+import type { RunErrorKind } from '@crisp/runs/contracts';
 
 const props = defineProps<{ kind: RunErrorKind; provider: string }>();
 defineEmits<{ retry: [] }>();

@@ -1,0 +1,28 @@
+{
+  "name": "@crisp/runs",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@crisp/conversations": "workspace:*",
+    "@crisp/models": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "vitest": "4.1.10"
+  },
+  "nx": {
+    "tags": [
+      "scope:feature",
+      "feature:runs"
+    ]
+  }
+}

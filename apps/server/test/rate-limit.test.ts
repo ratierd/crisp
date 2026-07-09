@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FakeConversationRepository, FakeRunStreamStore } from '@crisp/domain/testing';
+import { FakeConversationRepository } from '@crisp/conversations/testing';
+import { FakeRunStreamStore } from '@crisp/runs/testing';
 import { createApp } from '../src/app';
-import { loadEnv } from '../src/infra/env';
-import { ModelRegistry } from '../src/infra/model-registry';
+import { keyConfigFromEnv, loadEnv } from '../src/infra/env';
+import { ModelRegistry } from '@crisp/models';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 import { InMemoryTokenBucket, drainBucket } from '../src/middleware/rate-limit';
 import type { RateRules, TokenBucketStore } from '../src/middleware/rate-limit';
@@ -11,7 +12,7 @@ const makeApp = (rateLimit?: { store: TokenBucketStore; rules?: Partial<RateRule
   const env = loadEnv({});
   return createApp({
     env,
-    registry: new ModelRegistry(env),
+    registry: new ModelRegistry(keyConfigFromEnv(env)),
     gateway: new AiModelGateway(env, { delayMs: 0 }),
     conversations: new FakeConversationRepository(),
     runStreams: new FakeRunStreamStore(),

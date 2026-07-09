@@ -1,9 +1,16 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Conversation, ConversationWithMessages, Feedback, Message } from '@crisp/contracts';
-import { messageSchema } from '@crisp/contracts';
-import type { ConversationRepository } from '@crisp/domain';
+import type {
+  Conversation,
+  ConversationRepository,
+  ConversationWithMessages,
+  Message,
+} from '@crisp/conversations';
+import { messageSchema } from '@crisp/conversations';
+import type { Feedback, FeedbackStore } from '@crisp/feedback';
+import type { MessageStore } from '@crisp/runs';
+import type { ConversationRenamer } from '@crisp/titling';
 
 interface ConversationRow {
   id: string;
@@ -16,7 +23,15 @@ interface MessageRow {
   payload: string;
 }
 
-export class SqliteConversationRepository implements ConversationRepository {
+/**
+ * The one durable-storage adapter, satisfying every slice's view of it:
+ * conversations' ConversationRepository, runs' MessageStore, feedback's
+ * FeedbackStore and titling's ConversationRenamer (see ConversationPersistence
+ * in app.ts). Each slice declared only the methods it uses.
+ */
+export class SqliteConversationRepository
+  implements ConversationRepository, MessageStore, FeedbackStore, ConversationRenamer
+{
   private readonly db: Database;
 
   constructor(path: string) {

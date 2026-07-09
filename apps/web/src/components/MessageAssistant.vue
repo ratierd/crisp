@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { Feedback, RunStats } from '@crisp/contracts';
+import type { RunStats } from '@crisp/conversations/contracts';
+import type { Feedback } from '@crisp/feedback/contracts';
 import { formatDuration } from '../lib/relative-time';
 import MarkdownBlocks from './MarkdownBlocks.vue';
 

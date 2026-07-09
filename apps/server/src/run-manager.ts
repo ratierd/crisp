@@ -1,11 +1,7 @@
-import type { Message, Model } from '@crisp/contracts';
-import type {
-  ConversationService,
-  GatewayMessage,
-  RunService,
-  RunStreamStore,
-  TitleService,
-} from '@crisp/domain';
+import type { ConversationService, Message } from '@crisp/conversations';
+import type { Model } from '@crisp/models/contracts';
+import type { GatewayMessage, RunService, RunStreamStore } from '@crisp/runs';
+import type { TitleService } from '@crisp/titling';
 
 export interface StartInput {
   conversationId: string;

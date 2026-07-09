@@ -1,9 +1,6 @@
-import type {
-  ByoRunRequest,
-  Conversation,
-  ConversationWithMessages,
-  Model,
-} from '@crisp/contracts';
+import type { Conversation, ConversationWithMessages } from '@crisp/conversations/contracts';
+import type { Model } from '@crisp/models/contracts';
+import type { ByoRunRequest } from '@crisp/runs/contracts';
 
 const json = async <T>(response: Response): Promise<T> => {
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);

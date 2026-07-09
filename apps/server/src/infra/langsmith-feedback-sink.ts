@@ -1,6 +1,6 @@
 import type { Client } from 'langsmith';
-import type { Feedback } from '@crisp/contracts';
-import type { FeedbackSink } from '@crisp/domain';
+import type { Feedback } from '@crisp/feedback/contracts';
+import type { FeedbackSink } from '@crisp/feedback';
 
 const KEY = 'user-rating';
 

@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "libs/*"
+    "libs/*",
+    "libs/features/*"
   ],
   "scripts": {
     "dev": "nx run-many -t dev --parallel 2 --output-style stream",

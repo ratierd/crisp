@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import type { Conversation, Message } from '@crisp/contracts';
-import type { ConversationRepository } from '@crisp/domain';
-import { FakeConversationRepository } from '@crisp/domain/testing';
+import type { Conversation, Message } from '@crisp/conversations';
+import { FakeConversationRepository } from '@crisp/conversations/testing';
+import type { ConversationPersistence } from '../src/app';
 import { SqliteConversationRepository } from '../src/infra/sqlite-conversation-repository';
 
 /**
@@ -13,11 +13,11 @@ import { SqliteConversationRepository } from '../src/infra/sqlite-conversation-r
 const implementations = [
   {
     name: 'FakeConversationRepository',
-    make: (): ConversationRepository & { close?: () => void } => new FakeConversationRepository(),
+    make: (): ConversationPersistence & { close?: () => void } => new FakeConversationRepository(),
   },
   {
     name: 'SqliteConversationRepository(:memory:)',
-    make: (): ConversationRepository & { close?: () => void } =>
+    make: (): ConversationPersistence & { close?: () => void } =>
       new SqliteConversationRepository(':memory:'),
   },
 ];
@@ -39,8 +39,8 @@ const message = (id: string, overrides: Partial<Message> = {}): Message => ({
 });
 
 for (const { name, make } of implementations) {
-  describe(`ConversationRepository contract: ${name}`, () => {
-    let repo: ConversationRepository & { close?: () => void };
+  describe(`ConversationPersistence contract: ${name}`, () => {
+    let repo: ConversationPersistence & { close?: () => void };
 
     const fresh = () => {
       repo = make();

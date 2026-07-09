@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  FakeConversationRepository,
-  FakeModelGateway,
-  FakeRunStreamStore,
-} from '@crisp/domain/testing';
-import type { RunEvent } from '@crisp/domain';
+import { FakeConversationRepository } from '@crisp/conversations/testing';
+import { ModelRegistry } from '@crisp/models';
+import type { RunEvent } from '@crisp/runs';
+import { FakeModelGateway, FakeRunStreamStore } from '@crisp/runs/testing';
 import { createApp } from '../src/app';
-import { loadEnv } from '../src/infra/env';
-import { ModelRegistry } from '../src/infra/model-registry';
+import { keyConfigFromEnv, loadEnv } from '../src/infra/env';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
 /**
@@ -32,7 +29,7 @@ const withCookies = (app: {
 
 const makeApp = (envOverrides: Record<string, string | undefined> = {}) => {
   const env = loadEnv({ ...envOverrides });
-  const registry = new ModelRegistry(env);
+  const registry = new ModelRegistry(keyConfigFromEnv(env));
   const gateway = new AiModelGateway(env, { delayMs: 0 });
   const conversations = new FakeConversationRepository();
   const runStreams = new FakeRunStreamStore();
@@ -207,7 +204,7 @@ describe('POST /api/chat', () => {
     const runStreams = new FakeRunStreamStore();
     const { app } = createApp({
       env,
-      registry: new ModelRegistry(env),
+      registry: new ModelRegistry(keyConfigFromEnv(env)),
       gateway,
       conversations,
       runStreams,
@@ -252,7 +249,7 @@ describe('POST /api/chat', () => {
       const runStreams = new FakeRunStreamStore();
       const { app } = createApp({
         env,
-        registry: new ModelRegistry(env),
+        registry: new ModelRegistry(keyConfigFromEnv(env)),
         // Any delay works: the claim is decided before the first token streams.
         gateway: new AiModelGateway(env, { delayMs: 2 }),
         conversations,
@@ -365,7 +362,7 @@ describe('PUT /api/runs/:runId/feedback', () => {
     const conversations = new FakeConversationRepository();
     const { app } = createApp({
       env,
-      registry: new ModelRegistry(env),
+      registry: new ModelRegistry(keyConfigFromEnv(env)),
       gateway: new AiModelGateway(env, { delayMs: 0 }),
       conversations,
       runStreams: new FakeRunStreamStore(),
@@ -429,7 +426,7 @@ describe('POST /api/conversations/:id/byo-runs', () => {
     const conversations = new FakeConversationRepository();
     const { app } = createApp({
       env,
-      registry: new ModelRegistry(env),
+      registry: new ModelRegistry(keyConfigFromEnv(env)),
       gateway: new AiModelGateway(env, { delayMs: 0 }),
       conversations,
       runStreams: new FakeRunStreamStore(),
@@ -531,7 +528,7 @@ describe('POST /api/conversations/:id/byo-runs', () => {
 describe('POST /api/runs/:runId/stop', () => {
   it('aborts a live run and keeps the partial message', async () => {
     const env = loadEnv({});
-    const registry = new ModelRegistry(env);
+    const registry = new ModelRegistry(keyConfigFromEnv(env));
     const gateway = new AiModelGateway(env, { delayMs: 15 });
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();
@@ -640,7 +637,7 @@ describe('GET /api/health', () => {
     const env = loadEnv({});
     const base = {
       env,
-      registry: new ModelRegistry(env),
+      registry: new ModelRegistry(keyConfigFromEnv(env)),
       gateway: new AiModelGateway(env, { delayMs: 0 }),
       conversations: new FakeConversationRepository(),
       runStreams: new FakeRunStreamStore(),

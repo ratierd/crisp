@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { FakeConversationRepository, FakeRunStreamStore } from '@crisp/domain/testing';
+import { FakeConversationRepository } from '@crisp/conversations/testing';
+import { FakeRunStreamStore } from '@crisp/runs/testing';
 import { createApp } from '../src/app';
-import { loadEnv } from '../src/infra/env';
-import { ModelRegistry } from '../src/infra/model-registry';
+import { keyConfigFromEnv, loadEnv } from '../src/infra/env';
+import { ModelRegistry } from '@crisp/models';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
 const waitFor = async (predicate: () => boolean, timeoutMs = 2000) => {
@@ -16,7 +17,7 @@ const waitFor = async (predicate: () => boolean, timeoutMs = 2000) => {
 describe('regenerate', () => {
   it('replaces the previous assistant message instead of appending a second one', async () => {
     const env = loadEnv({});
-    const registry = new ModelRegistry(env);
+    const registry = new ModelRegistry(keyConfigFromEnv(env));
     const gateway = new AiModelGateway(env, { delayMs: 0 });
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Client } from 'langsmith';
-import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/domain';
+import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/runs';
 import { LangsmithTracingGateway } from '../src/infra/langsmith-tracing-gateway';
 
 const MODEL = {

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useChat } from '@crisp/ai/vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import type { Feedback, Message, RunErrorKind, RunStats } from '@crisp/contracts';
+import type { Message, RunStats } from '@crisp/conversations/contracts';
+import type { Feedback } from '@crisp/feedback/contracts';
+import type { RunErrorKind } from '@crisp/runs/contracts';
 import * as api from '../lib/api';
 import { crispConnection, isByoModelId } from '../lib/byo';
 import { useAppStore } from '../stores/app';

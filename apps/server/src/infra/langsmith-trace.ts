@@ -1,7 +1,7 @@
 import { RunTree } from 'langsmith/run_trees';
 import type { Client } from 'langsmith';
-import type { Model } from '@crisp/contracts';
-import type { GatewayMessage } from '@crisp/domain';
+import type { Model } from '@crisp/models/contracts';
+import type { GatewayMessage } from '@crisp/runs/contracts';
 
 /** Token usage as @crisp/ai reports it on RUN_FINISHED. */
 export interface TraceUsage {

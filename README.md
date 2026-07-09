@@ -144,31 +144,48 @@ Everything is optional (`bun setup` fills these interactively; see
 
 ## Architecture
 
-Nx monorepo, pragmatic hexagonal. The domain knows _what_ a chat app does;
-adapters know _how_ tonight's infrastructure does it.
+Nx monorepo, pragmatic hexagonal, organized as **feature slices** (ADR-0008):
+one lib per user-visible capability, each owning its wire contracts (zod
+schemas both runtimes validate against), the ports it consumes, and its
+behavior — no IO. Adapters know _how_ tonight's infrastructure does it.
 
 ```
 apps/
   web/       Vue 3 + Vite SPA — @crisp/ai/vue useChat, Pinia for app state
-  server/    Hono on Bun — routes + infra adapters
-    src/infra/   ModelRegistry, @crisp/ai gateway, bun:sqlite repo, Redis Streams store
+  server/    Hono on Bun — one route module per slice + the composition root
+    src/routes/  conversations, runs, feedback, models
+    src/infra/   @crisp/ai gateway, bun:sqlite repo, Redis Streams store, LangSmith
 libs/
   ai/        in-house AG-UI client (ADR-0003): chat orchestrator, provider adapters, SSE, useChat
-  contracts/ zod schemas shared by both sides (Model, Message, error taxonomy)
-  domain/    entities + ports + services, no IO
+  features/
+    conversations/  Conversation + Message schemas, CRUD service, ConversationRepository port
+    runs/           chat + BYO wire schemas, RunService, ModelGateway/MessageStore/RunStreamStore/RunMirror ports
+    titling/        auto-titling service, TitleModel + ConversationRenamer ports
+    feedback/       Feedback schemas, FeedbackService, FeedbackStore + FeedbackSink ports
+    models/         Model schemas + registry, KeyConfig port
 ```
 
-Five ports carry all the IO ([CONTEXT.md](CONTEXT.md) has the vocabulary):
+Two rules, both lint-enforced (`bun lint`): cross-slice, a feature is
+reachable through its `/contracts` entry only — the full interface (service +
+ports) is for the composition root in `apps/server`. And every port is
+**consumer-owned**: declared in the slice that calls it, sized to exactly what
+it uses. Structural typing then lets one adapter serve many slices — the
+SQLite repository satisfies four slices' ports, the ai gateway two:
 
-| port                     | job                                                     | adapter                                                                                                          |
-| ------------------------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `ModelGateway`           | start a Run against any Model, regardless of Provenance | `@crisp/ai` provider adapters + mock Demo provider, wrapped by a LangSmith tracing decorator when the key is set |
-| `ConversationRepository` | durable Conversations                                   | `bun:sqlite`                                                                                                     |
-| `RunStreamStore`         | buffer live Run events for reattach                     | Redis Streams                                                                                                    |
-| `FeedbackSink`           | mirror thumbs votes to observability                    | LangSmith feedback API                                                                                           |
-| `RunMirror`              | record browser-executed (BYO) Runs post-hoc             | LangSmith run API                                                                                                |
+| port (owning slice)                      | job                                                     | adapter                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `ModelGateway` (runs)                    | start a Run against any Model, regardless of Provenance | `@crisp/ai` provider adapters + mock Demo provider, wrapped by a LangSmith tracing decorator when the key is set |
+| `TitleModel` (titling)                   | run a Model for one title                               | the same gateway, seen narrower                                                                                  |
+| `ConversationRepository` (conversations) | durable Conversations: create, read, list, delete       | `bun:sqlite`                                                                                                     |
+| `MessageStore` (runs)                    | write a Run's outcome into a Conversation               | the same SQLite adapter                                                                                          |
+| `ConversationRenamer` (titling)          | apply a generated title                                 | the same SQLite adapter                                                                                          |
+| `FeedbackStore` (feedback)               | pin a verdict to the Message a Run produced             | the same SQLite adapter                                                                                          |
+| `RunStreamStore` (runs)                  | buffer live Run events for reattach                     | Redis Streams                                                                                                    |
+| `FeedbackSink` (feedback)                | mirror thumbs votes to observability                    | LangSmith feedback API                                                                                           |
+| `RunMirror` (runs)                       | record browser-executed (BYO) Runs post-hoc             | LangSmith run API                                                                                                |
+| `KeyConfig` (models)                     | which providers the server holds keys for               | process env                                                                                                      |
 
-Observability never touches the domain: tracing is a _decorator_ on
+Observability never touches the slices: tracing is a _decorator_ on
 `ModelGateway`, so without `LANGSMITH_API_KEY` the app composes exactly as it
 did before the feature existed.
 
@@ -186,7 +203,7 @@ Recorded as they were made, in [docs/adr/](docs/adr/) and
 - **AG-UI events cross the hexagon untranslated** (ADR-0002). AG-UI is an open
   protocol, not a vendor SDK type — translating it to "domain events" and back
   in the riskiest code path (stream handling) would be busywork with bug
-  surface. The domain only inspects event discriminants.
+  surface. The slices only inspect event discriminants.
 - **Redis for resumable runs** (ADR-0001). An in-process buffer would demo the
   same thing with zero infrastructure; Redis was chosen deliberately.
   Replay is cross-instance by construction; stop and SQLite currently pin

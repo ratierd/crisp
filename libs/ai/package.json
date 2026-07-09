@@ -16,7 +16,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "@crisp/contracts": "workspace:*",
+    "@crisp/conversations": "workspace:*",
+    "@crisp/runs": "workspace:*",
     "vitest": "4.1.10",
     "vue": "3.5.39"
   },

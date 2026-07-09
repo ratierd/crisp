@@ -14,6 +14,17 @@ export interface Env {
   demoEnabled: boolean;
 }
 
+/** The models slice's KeyConfig port, satisfied from the process env. */
+export const keyConfigFromEnv = (env: Env) => ({
+  demoEnabled: env.demoEnabled,
+  serverKeyFor: (provider: 'anthropic' | 'openai' | 'openrouter') =>
+    ({
+      anthropic: env.anthropicApiKey,
+      openai: env.openaiApiKey,
+      openrouter: env.openrouterApiKey,
+    })[provider],
+});
+
 export const loadEnv = (source: Record<string, string | undefined> = process.env): Env => ({
   port: Number(source.PORT ?? 3000),
   dbPath: source.DB_PATH ?? './data/crisp.sqlite',

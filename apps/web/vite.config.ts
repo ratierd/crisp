@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'vite';
 
+/** Resolve a feature slice's published entry straight to its source. */
+const slice = (name: string, entry: string) =>
+  fileURLToPath(new URL(`../../libs/features/${name}/src/${entry}.ts`, import.meta.url));
+
 export default defineConfig({
   plugins: [vue()],
   test: {
@@ -10,9 +14,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@crisp/contracts': fileURLToPath(
-        new URL('../../libs/contracts/src/index.ts', import.meta.url),
-      ),
+      '@crisp/models/contracts': slice('models', 'contracts'),
+      '@crisp/conversations/contracts': slice('conversations', 'contracts'),
+      '@crisp/feedback/contracts': slice('feedback', 'contracts'),
+      '@crisp/runs/contracts': slice('runs', 'contracts'),
     },
   },
   server: {

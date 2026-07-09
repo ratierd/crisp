@@ -1,15 +1,16 @@
 import { serveStatic } from 'hono/bun';
 import { secureHeaders } from 'hono/secure-headers';
 import { Client } from 'langsmith';
-import type { FeedbackSink, ModelGateway, RunMirror } from '@crisp/domain';
+import type { FeedbackSink } from '@crisp/feedback';
+import { ModelRegistry } from '@crisp/models';
+import type { ModelGateway, RunMirror } from '@crisp/runs';
 import { createApp } from './app';
-import { loadEnv } from './infra/env';
+import { keyConfigFromEnv, loadEnv } from './infra/env';
 import { LangsmithFeedbackSink } from './infra/langsmith-feedback-sink';
 import { LangsmithRunMirror } from './infra/langsmith-run-mirror';
 import { LangsmithTracingGateway } from './infra/langsmith-tracing-gateway';
 import { RedisTokenBucket } from './middleware/rate-limit';
 import { CSP_DIRECTIVES, cacheControlFor } from './infra/security';
-import { ModelRegistry } from './infra/model-registry';
 import { RedisRunStreamStore } from './infra/redis-run-stream-store';
 import { SqliteConversationRepository } from './infra/sqlite-conversation-repository';
 import { AiModelGateway } from './infra/ai-gateway';
@@ -20,7 +21,7 @@ import { AiModelGateway } from './infra/ai-gateway';
  */
 export const createProductionApp = async () => {
   const env = loadEnv();
-  const registry = new ModelRegistry(env);
+  const registry = new ModelRegistry(keyConfigFromEnv(env));
   let gateway: ModelGateway = new AiModelGateway(env);
   let feedback: FeedbackSink | undefined;
   let runMirror: RunMirror | undefined;

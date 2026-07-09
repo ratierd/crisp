@@ -21,8 +21,17 @@
       "@crisp/ai/ollama": ["./libs/ai/src/providers/ollama.ts"],
       "@crisp/ai/client": ["./libs/ai/src/client/index.ts"],
       "@crisp/ai/vue": ["./libs/ai/src/vue/index.ts"],
-      "@crisp/contracts": ["./libs/contracts/src/index.ts"],
-      "@crisp/domain": ["./libs/domain/src/index.ts"]
+      "@crisp/models": ["./libs/features/models/src/index.ts"],
+      "@crisp/models/contracts": ["./libs/features/models/src/contracts.ts"],
+      "@crisp/conversations": ["./libs/features/conversations/src/index.ts"],
+      "@crisp/conversations/contracts": ["./libs/features/conversations/src/contracts.ts"],
+      "@crisp/conversations/testing": ["./libs/features/conversations/src/testing.ts"],
+      "@crisp/feedback": ["./libs/features/feedback/src/index.ts"],
+      "@crisp/feedback/contracts": ["./libs/features/feedback/src/contracts.ts"],
+      "@crisp/runs": ["./libs/features/runs/src/index.ts"],
+      "@crisp/runs/contracts": ["./libs/features/runs/src/contracts.ts"],
+      "@crisp/runs/testing": ["./libs/features/runs/src/testing.ts"],
+      "@crisp/titling": ["./libs/features/titling/src/index.ts"]
     }
   }
 }

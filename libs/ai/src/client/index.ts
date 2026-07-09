@@ -47,7 +47,7 @@ const generateRunId = (): string => `run-${Date.now()}-${Math.random().toString(
 /**
  * A ConnectConnectionAdapter that POSTs an AG-UI RunAgentInput to `url` and
  * yields the SSE frames of the response. The body shape is pinned by
- * `chatRequestSchema` in @crisp/contracts.
+ * `chatRequestSchema` in @crisp/runs.
  */
 export const fetchServerSentEvents = (url: string): ConnectConnectionAdapter => ({
   async *connect(messages, data, abortSignal, runContext) {

@@ -1,5 +1,5 @@
 import type { Client } from 'langsmith';
-import type { MirroredRun, RunMirror } from '@crisp/domain';
+import type { MirroredRun, RunMirror } from '@crisp/runs';
 import { openTrace, traceOutputs } from './langsmith-trace';
 
 /**

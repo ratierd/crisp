@@ -10,8 +10,8 @@
         "@types/bun": "1.3.14",
         "@vitest/coverage-v8": "^4.1.10",
         "nx": "23.0.1",
-        "oxfmt": "^0.58.0",
-        "oxlint": "^1.73.0",
+        "oxfmt": "0.58.0",
+        "oxlint": "1.73.0",
         "railway": "^3.5.2",
         "typescript": "6.0.3",
       },
@@ -20,8 +20,11 @@
       "name": "@crisp/server",
       "dependencies": {
         "@crisp/ai": "workspace:*",
-        "@crisp/contracts": "workspace:*",
-        "@crisp/domain": "workspace:*",
+        "@crisp/conversations": "workspace:*",
+        "@crisp/feedback": "workspace:*",
+        "@crisp/models": "workspace:*",
+        "@crisp/runs": "workspace:*",
+        "@crisp/titling": "workspace:*",
         "hono": "4.12.28",
         "langsmith": "^0.8.0",
         "redis": "6.1.0",
@@ -36,7 +39,10 @@
       "name": "@crisp/web",
       "dependencies": {
         "@crisp/ai": "workspace:*",
-        "@crisp/contracts": "workspace:*",
+        "@crisp/conversations": "workspace:*",
+        "@crisp/feedback": "workspace:*",
+        "@crisp/models": "workspace:*",
+        "@crisp/runs": "workspace:*",
         "@fontsource-variable/jetbrains-mono": "5.2.8",
         "@fontsource-variable/public-sans": "5.2.7",
         "@fontsource-variable/source-serif-4": "5.2.9",
@@ -59,7 +65,8 @@
     "libs/ai": {
       "name": "@crisp/ai",
       "devDependencies": {
-        "@crisp/contracts": "workspace:*",
+        "@crisp/conversations": "workspace:*",
+        "@crisp/runs": "workspace:*",
         "vitest": "4.1.10",
         "vue": "3.5.39",
       },
@@ -70,8 +77,18 @@
         "vue",
       ],
     },
-    "libs/contracts": {
-      "name": "@crisp/contracts",
+    "libs/features/conversations": {
+      "name": "@crisp/conversations",
+      "dependencies": {
+        "@crisp/feedback": "workspace:*",
+        "zod": "4.4.3",
+      },
+      "devDependencies": {
+        "vitest": "4.1.10",
+      },
+    },
+    "libs/features/feedback": {
+      "name": "@crisp/feedback",
       "dependencies": {
         "zod": "4.4.3",
       },
@@ -79,10 +96,31 @@
         "vitest": "4.1.10",
       },
     },
-    "libs/domain": {
-      "name": "@crisp/domain",
+    "libs/features/models": {
+      "name": "@crisp/models",
       "dependencies": {
-        "@crisp/contracts": "workspace:*",
+        "zod": "4.4.3",
+      },
+      "devDependencies": {
+        "vitest": "4.1.10",
+      },
+    },
+    "libs/features/runs": {
+      "name": "@crisp/runs",
+      "dependencies": {
+        "@crisp/conversations": "workspace:*",
+        "@crisp/models": "workspace:*",
+        "zod": "4.4.3",
+      },
+      "devDependencies": {
+        "vitest": "4.1.10",
+      },
+    },
+    "libs/features/titling": {
+      "name": "@crisp/titling",
+      "dependencies": {
+        "@crisp/models": "workspace:*",
+        "@crisp/runs": "workspace:*",
       },
       "devDependencies": {
         "vitest": "4.1.10",
@@ -304,11 +342,17 @@
 
     "@crisp/ai": ["@crisp/ai@workspace:libs/ai"],
 
-    "@crisp/contracts": ["@crisp/contracts@workspace:libs/contracts"],
+    "@crisp/conversations": ["@crisp/conversations@workspace:libs/features/conversations"],
 
-    "@crisp/domain": ["@crisp/domain@workspace:libs/domain"],
+    "@crisp/feedback": ["@crisp/feedback@workspace:libs/features/feedback"],
+
+    "@crisp/models": ["@crisp/models@workspace:libs/features/models"],
+
+    "@crisp/runs": ["@crisp/runs@workspace:libs/features/runs"],
 
     "@crisp/server": ["@crisp/server@workspace:apps/server"],
+
+    "@crisp/titling": ["@crisp/titling@workspace:libs/features/titling"],
 
     "@crisp/web": ["@crisp/web@workspace:apps/web"],
 

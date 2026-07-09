@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import type { RunEvent, RunStreamStore } from '@crisp/domain';
+import type { RunEvent, RunStreamStore } from '@crisp/runs';
 
 const makeClient = (url: string) => createClient({ url });
 type RedisClient = ReturnType<typeof makeClient>;

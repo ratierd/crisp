@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@crisp/ai": "workspace:*",
-    "@crisp/contracts": "workspace:*",
-    "@crisp/domain": "workspace:*",
+    "@crisp/conversations": "workspace:*",
+    "@crisp/feedback": "workspace:*",
+    "@crisp/models": "workspace:*",
+    "@crisp/runs": "workspace:*",
+    "@crisp/titling": "workspace:*",
     "hono": "4.12.28",
     "langsmith": "^0.8.0",
     "redis": "6.1.0",

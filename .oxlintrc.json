@@ -10,16 +10,49 @@
       "error",
       {
         "depConstraints": [
-          { "sourceTag": "scope:contracts", "onlyDependOnLibsWithTags": [] },
-          { "sourceTag": "scope:ai", "onlyDependOnLibsWithTags": ["scope:contracts"] },
-          { "sourceTag": "scope:domain", "onlyDependOnLibsWithTags": ["scope:contracts"] },
+          { "sourceTag": "scope:feature", "onlyDependOnLibsWithTags": ["scope:feature"] },
+          { "sourceTag": "scope:ai", "onlyDependOnLibsWithTags": ["scope:feature"] },
           {
             "sourceTag": "scope:server",
-            "onlyDependOnLibsWithTags": ["scope:domain", "scope:ai", "scope:contracts"]
+            "onlyDependOnLibsWithTags": ["scope:feature", "scope:ai"]
           },
-          { "sourceTag": "scope:web", "onlyDependOnLibsWithTags": ["scope:ai", "scope:contracts"] }
+          { "sourceTag": "scope:web", "onlyDependOnLibsWithTags": ["scope:feature", "scope:ai"] }
         ]
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["libs/features/**", "libs/ai/**", "apps/web/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@crisp/models",
+                "message": "Cross-slice, a feature is reachable through its published surface only: import @crisp/models/contracts. The full interface (service + ports) is for the composition root in apps/server."
+              },
+              {
+                "name": "@crisp/conversations",
+                "message": "Cross-slice, a feature is reachable through its published surface only: import @crisp/conversations/contracts (or /testing in tests). The full interface is for the composition root in apps/server."
+              },
+              {
+                "name": "@crisp/feedback",
+                "message": "Cross-slice, a feature is reachable through its published surface only: import @crisp/feedback/contracts. The full interface is for the composition root in apps/server."
+              },
+              {
+                "name": "@crisp/runs",
+                "message": "Cross-slice, a feature is reachable through its published surface only: import @crisp/runs/contracts (or /testing in tests). The full interface is for the composition root in apps/server."
+              },
+              {
+                "name": "@crisp/titling",
+                "message": "Titling publishes no contracts — only the composition root in apps/server may use it."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

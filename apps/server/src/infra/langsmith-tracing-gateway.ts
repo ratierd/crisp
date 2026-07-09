@@ -1,6 +1,6 @@
 import type { RunTree } from 'langsmith/run_trees';
 import type { Client } from 'langsmith';
-import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/domain';
+import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/runs';
 import { openTrace, traceOutputs, type TraceUsage } from './langsmith-trace';
 
 interface TraceResult {

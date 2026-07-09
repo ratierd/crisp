@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Provenance } from '@crisp/contracts';
+import type { Provenance } from '@crisp/models/contracts';
 
 defineProps<{ provenance: Provenance }>();
 </script>

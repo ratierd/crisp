@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
-import type { Conversation, KeyedProvider, Model } from '@crisp/contracts';
-import { keyedProviderOf } from '@crisp/contracts';
+import type { Conversation } from '@crisp/conversations/contracts';
+import type { KeyedProvider, Model } from '@crisp/models/contracts';
+import { keyedProviderOf } from '@crisp/models/contracts';
 import * as api from '../lib/api';
 import { discoverByoModels, shouldAutoDiscover } from '../lib/byo';
 import { loadApiKeys, saveApiKeys, type ApiKeys } from '../lib/keys';

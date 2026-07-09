@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { RunErrorKind } from '@crisp/contracts';
+import type { RunErrorKind } from '@crisp/runs';
 import { classifyProviderError } from '../src/infra/classify-error';
 
 /**

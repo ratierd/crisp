@@ -34,11 +34,15 @@ _Avoid_: Provider type, origin, self-hosted
 Bring-your-own-key: a user-supplied provider API key that rides a chat request, makes an env-unavailable remote Model usable for that Run, and is billed to the user's own account. Acquired by pasting from the provider's console or minted in one click via OpenRouter's connect flow. Held in the user's browser, passed through the server per-request, never stored there.
 _Avoid_: User token, credential, session key
 
+**Feature Slice**:
+The unit of ownership: one user-visible capability (conversations, runs, titling, feedback, models) owning its contracts, its ports, and its behavior. Other slices reach it through its contracts only (ADR-0008).
+_Avoid_: Layer, module, subdomain
+
 **ModelGateway**:
-The port through which the domain starts a Run against any Model, regardless of Provenance. Adapters wrap @crisp/ai provider adapters (in-house, ADR-0003).
+The runs slice's port for starting a Run against any Model, regardless of Provenance. Titling declares its own narrower TitleModel port; one adapter (wrapping the in-house @crisp/ai provider adapters, ADR-0003) satisfies both.
 
 **ConversationRepository**:
-The port for durable Conversation storage. Adapter: SQLite (bun:sqlite).
+The conversations slice's port for durable Conversation storage — create, read, list, delete. Message writes (runs' MessageStore), renames (titling's ConversationRenamer) and Feedback (feedback's FeedbackStore) are other slices' ports on the same adapter. Adapter: SQLite (bun:sqlite).
 
 **RunStreamStore**:
-The port for buffering and fanning out the live event stream of a Run, enabling mid-stream resume. Adapter: Redis Streams.
+The runs slice's port for buffering and fanning out the live event stream of a Run, enabling mid-stream resume. Adapter: Redis Streams.

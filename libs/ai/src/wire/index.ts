@@ -1,4 +1,4 @@
-import type { Message } from '@crisp/contracts';
+import type { Message } from '@crisp/conversations/contracts';
 import type { UIMessage } from '../client';
 
 /**

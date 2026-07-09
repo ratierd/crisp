@@ -1,5 +1,5 @@
-import type { KeyedProvider } from '@crisp/contracts';
-import { keyedProviderSchema } from '@crisp/contracts';
+import type { KeyedProvider } from '@crisp/models/contracts';
+import { keyedProviderSchema } from '@crisp/models/contracts';
 
 /**
  * BYOK (ADR-0006): visitors paste their own provider keys to chat on their

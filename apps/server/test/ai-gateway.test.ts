@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RunEvent, StartRunOptions } from '@crisp/domain';
-import type { Model } from '@crisp/contracts';
+import type { RunEvent, StartRunOptions } from '@crisp/runs';
+import type { Model } from '@crisp/models/contracts';
 import { loadEnv } from '../src/infra/env';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 

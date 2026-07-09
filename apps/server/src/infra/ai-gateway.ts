@@ -2,7 +2,7 @@ import { chat } from '@crisp/ai';
 import { createAnthropicChat } from '@crisp/ai/anthropic';
 import { createOpenaiChat } from '@crisp/ai/openai';
 import { openaiCompatibleText } from '@crisp/ai/openai/compatible';
-import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/domain';
+import type { ModelGateway, RunEvent, StartRunOptions } from '@crisp/runs';
 import { classifyProviderError } from './classify-error';
 import { demoRun, type DemoProviderOptions } from './demo-provider';
 import type { Env } from './env';

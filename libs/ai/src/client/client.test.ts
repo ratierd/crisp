@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chatRequestSchema } from '@crisp/contracts';
+import { chatRequestSchema } from '@crisp/runs/contracts';
 import { ChatClient, fetchServerSentEvents, uiMessagesToWire } from './index';
 import type { ConnectConnectionAdapter, StreamChunk, UIMessage } from './index';
 

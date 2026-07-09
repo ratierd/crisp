@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @vitest-environment-options { "url": "https://crisp.example.dev/" }
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Model } from '@crisp/contracts';
+import type { Model } from '@crisp/models/contracts';
 
 const mocks = vi.hoisted(() => ({
   chat: vi.fn(),

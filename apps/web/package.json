@@ -12,7 +12,10 @@
   },
   "dependencies": {
     "@crisp/ai": "workspace:*",
-    "@crisp/contracts": "workspace:*",
+    "@crisp/conversations": "workspace:*",
+    "@crisp/feedback": "workspace:*",
+    "@crisp/models": "workspace:*",
+    "@crisp/runs": "workspace:*",
     "@fontsource-variable/jetbrains-mono": "5.2.8",
     "@fontsource-variable/public-sans": "5.2.7",
     "@fontsource-variable/source-serif-4": "5.2.9",

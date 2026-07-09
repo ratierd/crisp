@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import type { Model } from '@crisp/contracts';
+import type { Model } from '@crisp/models/contracts';
 
 const mocks = vi.hoisted(() => ({
   getModels: vi.fn(async (): Promise<Model[]> => []),

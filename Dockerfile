@@ -4,8 +4,11 @@ COPY package.json bun.lock nx.json tsconfig.base.json ./
 COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY libs/ai/package.json libs/ai/
-COPY libs/contracts/package.json libs/contracts/
-COPY libs/domain/package.json libs/domain/
+COPY libs/features/models/package.json libs/features/models/
+COPY libs/features/conversations/package.json libs/features/conversations/
+COPY libs/features/feedback/package.json libs/features/feedback/
+COPY libs/features/runs/package.json libs/features/runs/
+COPY libs/features/titling/package.json libs/features/titling/
 RUN bun install --frozen-lockfile
 COPY . .
 RUN bunx vite build apps/web

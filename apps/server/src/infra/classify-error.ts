@@ -1,4 +1,4 @@
-import type { RunErrorKind } from '@crisp/contracts';
+import type { RunErrorKind } from '@crisp/runs';
 
 /**
  * Maps a raw provider error onto the Crisp taxonomy. Providers surface
