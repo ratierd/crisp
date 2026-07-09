@@ -166,8 +166,9 @@ const startResize = (event: PointerEvent) => {
   background: none;
   border: none;
   color: var(--text-3);
-  font-size: 13px;
-  padding: 4px 7px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 8px;
   border-radius: var(--radius-s);
 }
 .collapse:hover {
@@ -259,9 +260,12 @@ const startResize = (event: PointerEvent) => {
 .delete {
   background: none;
   border: none;
-  padding: 0 2px;
+  /* padding grows the hit target; the negative margin keeps the row height */
+  padding: 4px 6px;
+  margin: -4px -6px;
   font-family: var(--font-meta);
-  font-size: 11px;
+  font-size: 17px;
+  line-height: 1;
   color: var(--text-3);
   /* opacity, not visibility: keeps the button in the tab order so keyboard
      users can reach it; it reveals on row hover or any keyboard focus */

@@ -140,7 +140,9 @@ textarea {
 .bottom-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  /* the picker trigger's 7px hover padding is part of the visual gap —
+     3px keeps the Tour pill on the picker cluster's spacing rhythm */
+  gap: 3px;
 }
 .spacer {
   flex: 1;
