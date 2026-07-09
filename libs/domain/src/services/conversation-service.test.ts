@@ -41,18 +41,34 @@ describe('ConversationService', () => {
   it('creates a conversation titled from the first message', async () => {
     const repo = new FakeConversationRepository();
     const service = new ConversationService({ conversations: repo });
-    const conversation = await service.create('Why does serif type read better in long form?');
+    const conversation = await service.create('Why does serif type read better in long form?', 'visitor-1');
     expect(conversation.title).toBe('Why does serif type read better in long for…');
-    expect(await service.get(conversation.id)).not.toBeNull();
+    expect(await service.get(conversation.id, 'visitor-1')).not.toBeNull();
   });
 
   it('applies a generated title only when usable', async () => {
     const repo = new FakeConversationRepository();
     const service = new ConversationService({ conversations: repo });
-    const conversation = await service.create('hello');
+    const conversation = await service.create('hello', 'visitor-1');
     await service.applyGeneratedTitle(conversation.id, '"Serif legibility"');
-    expect((await service.get(conversation.id))!.title).toBe('Serif legibility');
+    expect((await service.get(conversation.id, 'visitor-1'))!.title).toBe('Serif legibility');
     await service.applyGeneratedTitle(conversation.id, '""');
-    expect((await service.get(conversation.id))!.title).toBe('Serif legibility');
+    expect((await service.get(conversation.id, 'visitor-1'))!.title).toBe('Serif legibility');
+  });
+
+  it('scopes reads and deletes to the owner', async () => {
+    const repo = new FakeConversationRepository();
+    const service = new ConversationService({ conversations: repo });
+    const conversation = await service.create('mine', 'visitor-1');
+
+    expect(await service.get(conversation.id, 'visitor-2')).toBeNull();
+    expect(await service.list('visitor-2')).toEqual([]);
+    expect((await service.list('visitor-1')).map((c) => c.id)).toEqual([conversation.id]);
+
+    // a foreign delete is a no-op, not an error
+    await service.delete(conversation.id, 'visitor-2');
+    expect(await service.get(conversation.id, 'visitor-1')).not.toBeNull();
+    await service.delete(conversation.id, 'visitor-1');
+    expect(await service.get(conversation.id, 'visitor-1')).toBeNull();
   });
 });

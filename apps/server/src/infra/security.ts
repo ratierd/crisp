@@ -1,0 +1,48 @@
+/**
+ * Security & caching policy for the statically-served web app. Kept free of
+ * Bun-only imports so tests can verify the policy under Node — bootstrap.ts
+ * is the only consumer at runtime.
+ */
+
+/**
+ * Hashes of the inline <script> blocks the web app's index.html is allowed
+ * to run. Currently one: the pre-paint theme snippet (reads localStorage and
+ * sets data-theme before first render, so dark mode never flashes).
+ *
+ * The contract with apps/web is locked by test/security.test.ts, which
+ * re-hashes the actual index.html — change the snippet and that test tells
+ * you the new hash to put here.
+ */
+export const CSP_INLINE_SCRIPT_HASHES = ['sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23ijVVdRJ7CCNs='] as const;
+
+/**
+ * Enforced CSP for HTML documents (frontend's spec). Notable directives:
+ * - script-src: only bundled modules, WASM (Shiki), and the hashed theme snippet.
+ * - connect-src: same-origin APIs plus the visitor's own Ollama daemon on
+ *   localhost — BYO models are fetched by the *browser* (ADR-0004).
+ * - style-src-attr 'unsafe-inline': Vue/Shiki inline style attributes.
+ */
+export const CSP_DIRECTIVES = {
+  defaultSrc: ["'none'"],
+  scriptSrc: ["'self'", "'wasm-unsafe-eval'", ...CSP_INLINE_SCRIPT_HASHES.map((hash) => `'${hash}'`)],
+  styleSrc: ["'self'"],
+  styleSrcAttr: ["'unsafe-inline'"],
+  connectSrc: ["'self'", 'http://localhost:11434', 'http://127.0.0.1:11434'],
+  imgSrc: ["'self'", 'data:'],
+  fontSrc: ["'self'"],
+  baseUri: ["'none'"],
+  formAction: ["'self'"],
+  frameAncestors: ["'none'"],
+  objectSrc: ["'none'"],
+};
+
+/** Static-asset caching (frontend's spec). API responses are no-store in app.ts. */
+export const cacheControlFor = (pathname: string): string => {
+  // Vite emits content-hashed filenames under /assets — safe to cache forever.
+  if (pathname.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
+  if (pathname === '/favicon.svg' || pathname === '/byo-ollama.html' || pathname === '/byo-ollama.css') {
+    return 'public, max-age=3600';
+  }
+  // index.html and the SPA fallback: revalidate on every navigation.
+  return 'no-cache';
+};

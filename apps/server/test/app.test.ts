@@ -6,6 +6,24 @@ import { loadEnv } from '../src/infra/env';
 import { ModelRegistry } from '../src/infra/model-registry';
 import { AiModelGateway } from '../src/infra/ai-gateway';
 
+/**
+ * A cookie-jar view of a Hono app: one anonymous visitor. Conversations are
+ * scoped to the crisp_sid cookie, so multi-request flows must carry it.
+ */
+type Requester = (path: string, init?: RequestInit) => Promise<Response>;
+// `request` is typed loosely so any Hono instance fits, whatever its Env generic.
+const withCookies = (app: { request: (path: any, init?: any) => Response | Promise<Response> }): Requester => {
+  let cookie: string | undefined;
+  return async (path, init = {}) => {
+    const headers = new Headers(init.headers);
+    if (cookie) headers.set('cookie', cookie);
+    const response = await app.request(path, { ...init, headers });
+    const set = response.headers.get('set-cookie');
+    if (set) cookie = set.split(';')[0]!;
+    return response;
+  };
+};
+
 const makeApp = (envOverrides: Record<string, string | undefined> = {}) => {
   const env = loadEnv({ ...envOverrides });
   const registry = new ModelRegistry(env);
@@ -13,7 +31,7 @@ const makeApp = (envOverrides: Record<string, string | undefined> = {}) => {
   const conversations = new FakeConversationRepository();
   const runStreams = new FakeRunStreamStore();
   const { app, runManager } = createApp({ env, registry, gateway, conversations, runStreams });
-  return { app, runManager, conversations, runStreams };
+  return { app, request: withCookies(app), runManager, conversations, runStreams };
 };
 
 const chatBody = (conversationId: string, text: string, overrides: Record<string, unknown> = {}) => ({
@@ -85,8 +103,8 @@ describe('GET /api/models', () => {
 
 describe('POST /api/chat', () => {
   it('streams a full AG-UI run and persists the exchange', async () => {
-    const { app, conversations } = makeApp();
-    const response = await app.request('/api/chat', {
+    const { request, conversations } = makeApp();
+    const response = await request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(chatBody('conv-1', 'hello there')),
@@ -108,7 +126,7 @@ describe('POST /api/chat', () => {
     expect(messages[1]!.stats?.ttftMs).toBeGreaterThanOrEqual(0);
 
     // conversation exists with the fallback (or generated) title
-    const list = await app.request('/api/conversations');
+    const list = await request('/api/conversations');
     const { conversations: convs } = (await list.json()) as { conversations: Array<{ id: string }> };
     expect(convs.some((c) => c.id === 'conv-1')).toBe(true);
   });
@@ -177,6 +195,43 @@ describe('POST /api/chat', () => {
     });
     expect(response.status).toBe(400);
   });
+
+  it('409s a concurrent send for the same conversation (atomic claim)', { timeout: 10_000 }, async () => {
+    const env = loadEnv({});
+    const conversations = new FakeConversationRepository();
+    const runStreams = new FakeRunStreamStore();
+    const { app } = createApp({
+      env,
+      registry: new ModelRegistry(env),
+      // Any delay works: the claim is decided before the first token streams.
+      gateway: new AiModelGateway(env, { delayMs: 2 }),
+      conversations,
+      runStreams,
+    });
+    const request = withCookies(app);
+    await request('/api/conversations'); // prime the session cookie for both sends
+
+    const send = (text: string) =>
+      request('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(chatBody('conv-race', text)),
+      });
+
+    // Fire both without awaiting the first stream: only one may win the claim.
+    const [first, second] = await Promise.all([send('first message'), send('second message')]);
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([200, 409]);
+
+    const winner = first.status === 200 ? first : second;
+    await readSse(winner); // drain to completion
+
+    // once the run finished, the claim is released and a new send is accepted
+    await waitFor(async () => (await runStreams.activeRun('conv-race')) === null);
+    const third = await send('third message');
+    expect(third.status).toBe(200);
+    await readSse(third);
+  });
 });
 
 describe('resume', () => {
@@ -218,15 +273,15 @@ describe('resume', () => {
   });
 
   it('exposes activeRunId on the conversation while live', async () => {
-    const { app, runStreams } = makeApp();
-    await app.request('/api/chat', {
+    const { request, runStreams } = makeApp();
+    await request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(chatBody('conv-live', 'hi')),
     });
     // after completion the active run clears
     await waitFor(async () => (await runStreams.activeRun('conv-live')) === null);
-    const response = await app.request('/api/conversations/conv-live');
+    const response = await request('/api/conversations/conv-live');
     const body = (await response.json()) as { activeRunId: string | null; messages: unknown[] };
     expect(body.activeRunId).toBeNull();
     expect(body.messages).toHaveLength(2);
@@ -234,9 +289,9 @@ describe('resume', () => {
 });
 
 describe('PUT /api/runs/:runId/feedback', () => {
-  const runExchange = async (app: ReturnType<typeof makeApp>['app'], conversations: FakeConversationRepository) => {
+  const runExchange = async (request: Requester, conversations: FakeConversationRepository) => {
     await readSse(
-      await app.request('/api/chat', {
+      await request('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(chatBody('conv-fb', 'hello there')),
@@ -246,8 +301,8 @@ describe('PUT /api/runs/:runId/feedback', () => {
     return conversations.messages.get('conv-fb')![1]!;
   };
 
-  const putFeedback = (app: ReturnType<typeof makeApp>['app'], runId: string, body: unknown) =>
-    app.request(`/api/runs/${runId}/feedback`, {
+  const putFeedback = (request: Requester, runId: string, body: unknown) =>
+    request(`/api/runs/${runId}/feedback`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
@@ -265,17 +320,18 @@ describe('PUT /api/runs/:runId/feedback', () => {
       runStreams: new FakeRunStreamStore(),
       feedback: { record: async (runId, feedback) => void mirrored.push({ runId, feedback }) },
     });
+    const request = withCookies(app);
 
-    const assistant = await runExchange(app, conversations);
+    const assistant = await runExchange(request, conversations);
     expect(assistant.runId).toBeTruthy(); // RunService stamps the Run id
 
-    const vote = await putFeedback(app, assistant.runId!, { score: 'down', comment: 'too vague' });
+    const vote = await putFeedback(request, assistant.runId!, { score: 'down', comment: 'too vague' });
     expect(vote.status).toBe(200);
     let stored = conversations.messages.get('conv-fb')![1]!;
     expect(stored.feedback).toEqual({ score: 'down', comment: 'too vague' });
     expect(mirrored).toEqual([{ runId: assistant.runId, feedback: { score: 'down', comment: 'too vague' } }]);
 
-    const retract = await putFeedback(app, assistant.runId!, { score: null });
+    const retract = await putFeedback(request, assistant.runId!, { score: null });
     expect(retract.status).toBe(200);
     stored = conversations.messages.get('conv-fb')![1]!;
     expect(stored.feedback).toBeUndefined();
@@ -283,11 +339,11 @@ describe('PUT /api/runs/:runId/feedback', () => {
   });
 
   it('404s for unknown runs and 400s malformed bodies', async () => {
-    const { app, conversations } = makeApp();
-    const assistant = await runExchange(app, conversations);
+    const { request, conversations } = makeApp();
+    const assistant = await runExchange(request, conversations);
 
-    expect((await putFeedback(app, 'no-such-run', { score: 'up' })).status).toBe(404);
-    expect((await putFeedback(app, assistant.runId!, { score: 'sideways' })).status).toBe(400);
+    expect((await putFeedback(request, 'no-such-run', { score: 'up' })).status).toBe(404);
+    expect((await putFeedback(request, assistant.runId!, { score: 'sideways' })).status).toBe(400);
   });
 });
 
@@ -323,15 +379,17 @@ describe('POST /api/conversations/:id/byo-runs', () => {
       runStreams: new FakeRunStreamStore(),
       runMirror: { record: async (run) => void mirrored.push(run) },
     });
+    const request = withCookies(app);
 
-    const response = await app.request('/api/conversations/conv-byo/byo-runs', {
+    const response = await request('/api/conversations/conv-byo/byo-runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(report()),
     });
     expect(response.status).toBe(200);
 
-    const conversation = await conversations.get('conv-byo');
+    const owner = conversations.owners.get('conv-byo')!;
+    const conversation = await conversations.get('conv-byo', owner);
     expect(conversation).not.toBeNull();
     expect(conversation!.title.length).toBeGreaterThan(0);
     const [user, assistant] = conversation!.messages;
@@ -347,25 +405,25 @@ describe('POST /api/conversations/:id/byo-runs', () => {
     expect(run.outcome).toBe('completed');
     expect(run.usage).toEqual({ promptTokens: 6, completionTokens: 7, totalTokens: 13 });
 
-    // feedback works on BYO runs like any other
-    const vote = await app.request('/api/runs/b3b0c8a4-8a34-4b5e-9d1c-2f6a7e5d4c3b/feedback', {
+    // feedback works on BYO runs like any other (same visitor session)
+    const vote = await request('/api/runs/b3b0c8a4-8a34-4b5e-9d1c-2f6a7e5d4c3b/feedback', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ score: 'up' }),
     });
     expect(vote.status).toBe(200);
-    expect((await conversations.get('conv-byo'))!.messages[1]!.feedback).toEqual({ score: 'up' });
+    expect((await conversations.get('conv-byo', owner))!.messages[1]!.feedback).toEqual({ score: 'up' });
   });
 
   it('dedupes the user message on regenerate and drops superseded answers', async () => {
-    const { app, conversations } = makeApp();
-    await app.request('/api/conversations/conv-byo2/byo-runs', {
+    const { request, conversations } = makeApp();
+    await request('/api/conversations/conv-byo2/byo-runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(report({ runId: crypto.randomUUID() })),
     });
     // regenerate: same user message id, new run
-    await app.request('/api/conversations/conv-byo2/byo-runs', {
+    await request('/api/conversations/conv-byo2/byo-runs', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(report({ runId: crypto.randomUUID(), assistantText: 'second answer' })),
@@ -373,6 +431,23 @@ describe('POST /api/conversations/:id/byo-runs', () => {
     const messages = conversations.messages.get('conv-byo2')!;
     expect(messages).toHaveLength(2);
     expect(messages[1]!.parts[0]!.content).toBe('second answer');
+  });
+
+  it('is idempotent on runId: a retried report does not duplicate the exchange', async () => {
+    const { request, conversations } = makeApp();
+    const runId = crypto.randomUUID();
+    const send = () =>
+      request('/api/conversations/conv-byo-retry/byo-runs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(report({ runId })),
+      });
+
+    expect((await send()).status).toBe(200);
+    const retry = await send();
+    expect(retry.status).toBe(200);
+    expect(((await retry.json()) as { deduped?: boolean }).deduped).toBe(true);
+    expect(conversations.messages.get('conv-byo-retry')!).toHaveLength(2);
   });
 
   it('persists nothing but still accepts a failed run report', async () => {
@@ -421,7 +496,100 @@ describe('POST /api/runs/:runId/stop', () => {
     expect(assistant.stoppedEarly).toBe(true);
     expect(assistant.parts[0]!.content.length).toBeGreaterThan(0);
 
+    // idempotent: the desired state ("not running") already holds
     const again = await app.request(`/api/runs/${runId}/stop`, { method: 'POST' });
-    expect(again.status).toBe(404);
+    expect(again.status).toBe(200);
+    expect(((await again.json()) as { stopped: boolean }).stopped).toBe(false);
+  });
+});
+
+describe('visitor scoping (crisp_sid)', () => {
+  it('isolates conversations between anonymous sessions', async () => {
+    const { app, conversations } = makeApp();
+    const alice = withCookies(app);
+    const bob = withCookies(app);
+
+    const first = await alice('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(chatBody('conv-alice', 'hello from alice')),
+    });
+    expect(first.status).toBe(200);
+    // the session cookie is HttpOnly and scoped to the site
+    expect(first.headers.get('set-cookie')).toMatch(/crisp_sid=[0-9a-f-]{36}.*HttpOnly/i);
+    await readSse(first);
+    await waitFor(() => (conversations.messages.get('conv-alice')?.length ?? 0) === 2);
+
+    // alice sees her conversation; bob sees nothing
+    const aliceList = (await (await alice('/api/conversations')).json()) as { conversations: unknown[] };
+    expect(aliceList.conversations).toHaveLength(1);
+    const bobList = (await (await bob('/api/conversations')).json()) as { conversations: unknown[] };
+    expect(bobList.conversations).toHaveLength(0);
+    expect((await bob('/api/conversations/conv-alice')).status).toBe(404);
+
+    // bob's delete is a no-op on alice's conversation
+    expect((await bob('/api/conversations/conv-alice', { method: 'DELETE' })).status).toBe(204);
+    expect((await alice('/api/conversations/conv-alice')).status).toBe(200);
+
+    // bob cannot vote on alice's run…
+    const runId = conversations.messages.get('conv-alice')![1]!.runId!;
+    const foreignVote = await bob(`/api/runs/${runId}/feedback`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ score: 'down' }),
+    });
+    expect(foreignVote.status).toBe(404);
+
+    // …and cannot graft a BYO run onto her conversation id
+    const forged = await bob('/api/conversations/conv-alice/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        runId: crypto.randomUUID(),
+        modelId: 'byo/llama3.2:1b',
+        history: [{ role: 'user', content: 'forged' }],
+        assistantText: 'forged answer',
+        outcome: 'completed',
+        stats: { ttftMs: 1, tokensPerSec: 1 },
+        startedAt: Date.now() - 10,
+        finishedAt: Date.now(),
+      }),
+    });
+    expect(forged.status).toBe(409);
+    expect(conversations.messages.get('conv-alice')!).toHaveLength(2);
+  });
+});
+
+describe('GET /api/health', () => {
+  it('reports each backend and degrades to 503 when one is down', async () => {
+    const env = loadEnv({});
+    const base = {
+      env,
+      registry: new ModelRegistry(env),
+      gateway: new AiModelGateway(env, { delayMs: 0 }),
+      conversations: new FakeConversationRepository(),
+      runStreams: new FakeRunStreamStore(),
+    };
+
+    const healthy = createApp({ ...base, probes: { redis: async () => {}, db: async () => {} } }).app;
+    const up = await healthy.request('/api/health');
+    expect(up.status).toBe(200);
+    const upBody = (await up.json()) as { ok: boolean; redis: boolean; db: boolean; startedAt: string };
+    expect(upBody).toMatchObject({ ok: true, redis: true, db: true });
+    expect(Number.isNaN(Date.parse(upBody.startedAt))).toBe(false);
+
+    const degraded = createApp({
+      ...base,
+      probes: {
+        redis: async () => {
+          throw new Error('connection refused');
+        },
+        db: async () => {},
+      },
+    }).app;
+    const down = await degraded.request('/api/health');
+    expect(down.status).toBe(503);
+    expect((await down.json()) as object).toMatchObject({ ok: false, redis: false, db: true });
+    expect(down.headers.get('cache-control')).toBe('no-store');
   });
 });

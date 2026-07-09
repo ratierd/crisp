@@ -21,13 +21,23 @@ describe('regenerate', () => {
     const conversations = new FakeConversationRepository();
     const runStreams = new FakeRunStreamStore();
     const { app } = createApp({ env, registry, gateway, conversations, runStreams });
+    // one visitor session: conversations are scoped to the crisp_sid cookie
+    let cookie: string | undefined;
+    const request = async (path: string, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers);
+      if (cookie) headers.set('cookie', cookie);
+      const response = await app.request(path, { ...init, headers });
+      const set = response.headers.get('set-cookie');
+      if (set) cookie = set.split(';')[0]!;
+      return response;
+    };
 
     const body = {
       threadId: 'conv-regen',
       messages: [{ id: 'u-1', role: 'user', parts: [{ type: 'text', content: 'hello' }] }],
       forwardedProps: { modelId: 'demo/demo' },
     };
-    const first = await app.request('/api/chat', {
+    const first = await request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
@@ -37,7 +47,7 @@ describe('regenerate', () => {
     const firstAssistantId = conversations.messages.get('conv-regen')![1]!.id;
 
     // reload() resends history ending at the same user message
-    const second = await app.request('/api/chat', {
+    const second = await request('/api/chat', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),

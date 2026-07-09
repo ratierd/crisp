@@ -36,7 +36,7 @@ export class ConversationService {
     this.newId = deps.newId ?? (() => crypto.randomUUID());
   }
 
-  async create(firstUserText: string, id?: string): Promise<Conversation> {
+  async create(firstUserText: string, owner: string, id?: string): Promise<Conversation> {
     const at = this.now().toISOString();
     const conversation: Conversation = {
       id: id ?? this.newId(),
@@ -44,16 +44,16 @@ export class ConversationService {
       createdAt: at,
       updatedAt: at,
     };
-    await this.deps.conversations.create(conversation);
+    await this.deps.conversations.create(conversation, owner);
     return conversation;
   }
 
-  get(id: string): Promise<ConversationWithMessages | null> {
-    return this.deps.conversations.get(id);
+  get(id: string, owner: string): Promise<ConversationWithMessages | null> {
+    return this.deps.conversations.get(id, owner);
   }
 
-  list(): Promise<Conversation[]> {
-    return this.deps.conversations.list();
+  list(owner: string): Promise<Conversation[]> {
+    return this.deps.conversations.list(owner);
   }
 
   async applyGeneratedTitle(id: string, rawTitle: string): Promise<void> {
@@ -62,7 +62,7 @@ export class ConversationService {
     await this.deps.conversations.rename(id, title);
   }
 
-  delete(id: string): Promise<void> {
-    return this.deps.conversations.delete(id);
+  delete(id: string, owner: string): Promise<void> {
+    return this.deps.conversations.delete(id, owner);
   }
 }

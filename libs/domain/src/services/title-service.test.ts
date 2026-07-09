@@ -27,10 +27,10 @@ describe('TitleService', () => {
       ],
     });
     const { conversations, service } = setup(gateway);
-    const conversation = await conversations.create('why serif?');
+    const conversation = await conversations.create('why serif?', 'visitor-1');
 
     await service.generate(conversation.id, demoModel, 'why serif?', 'Because…');
-    expect((await conversations.get(conversation.id))!.title).toBe('Serif legibility');
+    expect((await conversations.get(conversation.id, 'visitor-1'))!.title).toBe('Serif legibility');
   });
 
   it('forwards the BYOK key so the title run bills the same account', async () => {
@@ -38,7 +38,7 @@ describe('TitleService', () => {
       events: [{ type: 'TEXT_MESSAGE_CONTENT', messageId: 'm', delta: 'A title' }],
     });
     const { conversations, service } = setup(gateway);
-    const conversation = await conversations.create('why serif?');
+    const conversation = await conversations.create('why serif?', 'visitor-1');
 
     await service.generate(conversation.id, demoModel, 'why serif?', 'Because…', 'sk-user');
     expect(gateway.calls[0]!.apiKey).toBe('sk-user');
@@ -49,9 +49,9 @@ describe('TitleService', () => {
       events: [{ type: 'RUN_ERROR', code: 'provider_unavailable', message: 'down' }],
     });
     const { conversations, service } = setup(gateway);
-    const conversation = await conversations.create('why serif?');
+    const conversation = await conversations.create('why serif?', 'visitor-1');
 
     await service.generate(conversation.id, demoModel, 'why serif?', 'Because…');
-    expect((await conversations.get(conversation.id))!.title).toBe('why serif?');
+    expect((await conversations.get(conversation.id, 'visitor-1'))!.title).toBe('why serif?');
   });
 });

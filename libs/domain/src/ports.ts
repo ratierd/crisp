@@ -38,21 +38,30 @@ export interface ModelGateway {
   startRun(options: StartRunOptions): AsyncIterable<RunEvent>;
 }
 
-/** The port for durable Conversation storage. */
+/**
+ * The port for durable Conversation storage.
+ *
+ * `owner` is the anonymous visitor identity (an unguessable session id from
+ * an HttpOnly cookie): reads and deletes are scoped to it, so one visitor
+ * can never see or touch another's Conversations. Methods without an owner
+ * parameter (rename, appendMessage, deleteMessagesAfter) are server-internal
+ * and only reached behind an owner-scoped lookup or a Run the owner started.
+ */
 export interface ConversationRepository {
-  create(conversation: Conversation): Promise<void>;
-  get(id: string): Promise<ConversationWithMessages | null>;
-  list(): Promise<Conversation[]>;
+  create(conversation: Conversation, owner: string): Promise<void>;
+  get(id: string, owner: string): Promise<ConversationWithMessages | null>;
+  list(owner: string): Promise<Conversation[]>;
   rename(id: string, title: string): Promise<void>;
-  delete(id: string): Promise<void>;
+  delete(id: string, owner: string): Promise<void>;
   appendMessage(conversationId: string, message: Message): Promise<void>;
   /** Regenerate support: drops every Message after the given one. */
   deleteMessagesAfter(conversationId: string, messageId: string): Promise<void>;
   /**
    * Sets (or, with null, retracts) the Feedback on the Message a Run
-   * produced. Returns false when no Message carries that runId.
+   * produced, if that Run belongs to one of the owner's Conversations.
+   * Returns false when no such Message exists.
    */
-  setFeedback(runId: string, feedback: Feedback | null): Promise<boolean>;
+  setFeedback(runId: string, feedback: Feedback | null, owner: string): Promise<boolean>;
 }
 
 /**
@@ -95,6 +104,16 @@ export interface RunStreamStore {
   markFinished(runId: string): Promise<void>;
   /** Replays buffered events from the start, then tails live until finished. */
   replay(runId: string, signal?: AbortSignal): AsyncIterable<RunEvent>;
-  setActiveRun(conversationId: string, runId: string | null): Promise<void>;
+  /**
+   * Atomically claims the Conversation for a Run. Returns false when another
+   * Run already holds the claim — the caller must not start a second one.
+   * Implementations must make check-and-set a single atomic step.
+   */
+  claimActiveRun(conversationId: string, runId: string): Promise<boolean>;
+  /**
+   * Releases the claim, but only if this Run still holds it — a Run that
+   * outlived its claim must never evict a successor's.
+   */
+  releaseActiveRun(conversationId: string, runId: string): Promise<void>;
   activeRun(conversationId: string): Promise<string | null>;
 }

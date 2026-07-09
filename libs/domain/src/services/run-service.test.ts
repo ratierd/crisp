@@ -69,7 +69,6 @@ describe('RunService.execute', () => {
     const [runId] = [...runStreams.events.keys()];
     expect(runStreams.events.get(runId!)).toHaveLength(seen.length);
     expect(runStreams.finished.has(runId!)).toBe(true);
-    expect(await runStreams.activeRun('c1')).toBeNull();
   });
 
   it('does not persist an assistant message when the run errors', async () => {
@@ -88,7 +87,7 @@ describe('RunService.execute', () => {
     expect(seen.at(-1)!.type).toBe('RUN_ERROR');
     const messages = conversations.messages.get('c1')!;
     expect(messages).toHaveLength(1); // only the user message
-    expect(await runStreams.activeRun('c1')).toBeNull();
+    expect(runStreams.finished.has('run-1')).toBe(true);
   });
 
   it('stops forwarding events after RUN_ERROR', async () => {
@@ -125,7 +124,6 @@ describe('RunService.execute', () => {
 
     // failed runs keep only the user message
     expect(conversations.messages.get('c1')!).toHaveLength(1);
-    expect(await runStreams.activeRun('c1')).toBeNull();
     const [runId] = [...runStreams.events.keys()];
     expect(runStreams.finished.has(runId!)).toBe(true);
   });
@@ -161,6 +159,40 @@ describe('RunService.execute', () => {
     expect(assistant.stoppedEarly).toBe(true);
     expect(assistant.parts[0]!.content.length).toBeGreaterThan(0);
     expect(assistant.parts[0]!.content.length).toBeLessThan('one two three four five six'.length);
+  });
+
+  it('persists the exchange even when the stream store dies mid-run', async () => {
+    const gateway = new FakeModelGateway({ events: defaultRunEvents('r', 'answer that must survive redis dying') });
+    const conversations = new FakeConversationRepository();
+    const runStreams = new FakeRunStreamStore();
+    // The store starts failing after the second event — a Redis outage mid-run.
+    let appended = 0;
+    runStreams.append = async () => {
+      appended += 1;
+      if (appended > 2) throw new Error('redis connection lost');
+    };
+    runStreams.markFinished = async () => {
+      throw new Error('redis connection lost');
+    };
+    const service = new RunService({ gateway, conversations, runStreams });
+
+    const seen = await collect(
+      service.execute({
+        conversationId: 'c1',
+        runId: 'run-1',
+        model: demoModel,
+        history: [{ role: 'user', content: 'hi' }],
+        userMessage: userMessage('hi'),
+      }),
+    );
+
+    // the full gateway stream was still consumed…
+    expect(seen.at(-1)!.type).toBe('RUN_FINISHED');
+    // …and the exchange landed in the repository despite the dead store
+    const messages = conversations.messages.get('c1')!;
+    expect(messages).toHaveLength(2);
+    expect(messages[1]!.parts[0]!.content).toBe('answer that must survive redis dying');
+    expect(messages[1]!.stoppedEarly).toBeUndefined();
   });
 
   it('persists nothing extra when aborted before the first token', async () => {

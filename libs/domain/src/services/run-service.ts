@@ -46,12 +46,26 @@ export class RunService {
     if (input.userMessage) {
       await conversations.appendMessage(input.conversationId, input.userMessage);
     }
-    await runStreams.setActiveRun(input.conversationId, runId);
 
     let text = '';
     let firstTokenAt: number | null = null;
     let deltaCount = 0;
     let failed = false;
+
+    // The stream store is a live-delivery concern, not the system of record:
+    // if it dies mid-run (Redis outage), attached clients lose their stream,
+    // but the Run keeps consuming the gateway and the outcome still persists
+    // to the repository. First failure wins; later writes are skipped.
+    let streamBroken = false;
+    const teeToStream = async (write: () => Promise<void>) => {
+      if (streamBroken) return;
+      try {
+        await write();
+      } catch (error) {
+        streamBroken = true;
+        console.warn(`run ${runId}: stream store unavailable, continuing without live delivery`, error);
+      }
+    };
 
     const finalize = async (stoppedEarly: boolean) => {
       if (text.length > 0 && !failed) {
@@ -72,8 +86,7 @@ export class RunService {
         };
         await conversations.appendMessage(input.conversationId, assistant);
       }
-      await runStreams.setActiveRun(input.conversationId, null);
-      await runStreams.markFinished(runId);
+      await teeToStream(() => runStreams.markFinished(runId));
     };
 
     try {
@@ -93,7 +106,7 @@ export class RunService {
           deltaCount += 1;
         }
         if (event.type === 'RUN_ERROR') failed = true;
-        await runStreams.append(runId, event);
+        await teeToStream(() => runStreams.append(runId, event));
         yield event;
         if (failed) break;
       }
@@ -106,7 +119,7 @@ export class RunService {
       // throws is genuinely unexpected.
       const runError = this.runErrorEvent(runId, input.model, 'unknown', error);
       failed = true;
-      await runStreams.append(runId, runError);
+      await teeToStream(() => runStreams.append(runId, runError));
       yield runError;
       await finalize(false);
       return;

@@ -76,10 +76,12 @@ export type ConversationListResponse = z.infer<typeof conversationListResponseSc
  * it is used for this Run and never persisted or logged (ADR-0006).
  */
 export const chatRequestSchema = z.looseObject({
-  threadId: z.string().min(1),
-  messages: z.array(z.unknown()).min(1),
+  threadId: z.string().min(1).max(128),
+  // The count cap bounds provider-call growth; per-message size is bounded
+  // by the HTTP body limit (see the server's abuse-control middleware).
+  messages: z.array(z.unknown()).min(1).max(100),
   forwardedProps: z.looseObject({
-    modelId: z.string().min(1),
+    modelId: z.string().min(1).max(256),
     apiKey: z.string().min(1).max(512).optional(),
   }),
 });
@@ -88,7 +90,7 @@ export type ChatRequest = z.infer<typeof chatRequestSchema>;
 /** One entry of the history the browser's local gateway sent to the model. */
 export const byoHistoryMessageSchema = z.object({
   role: z.enum(['user', 'assistant', 'system']),
-  content: z.string(),
+  content: z.string().max(64_000),
 });
 
 export const byoUsageSchema = z.object({
@@ -104,16 +106,16 @@ export const byoUsageSchema = z.object({
  */
 export const byoRunRequestSchema = z.object({
   runId: z.uuid(),
-  modelId: z.string().startsWith('byo/'),
-  history: z.array(byoHistoryMessageSchema).min(1),
+  modelId: z.string().startsWith('byo/').max(256),
+  history: z.array(byoHistoryMessageSchema).min(1).max(100),
   /** Absent when regenerating (the user Message is already persisted). */
   userMessage: messageSchema.optional(),
-  assistantText: z.string(),
+  assistantText: z.string().max(131_072),
   outcome: z.enum(['completed', 'stopped', 'failed']),
   stats: runStatsSchema,
   usage: byoUsageSchema.optional(),
   startedAt: z.number(),
   finishedAt: z.number(),
-  error: z.string().optional(),
+  error: z.string().max(2000).optional(),
 });
 export type ByoRunRequest = z.infer<typeof byoRunRequestSchema>;
