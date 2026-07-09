@@ -96,18 +96,7 @@ defineExpose({ focus });
   z-index: 12;
   flex: none;
   padding: 0 26px 14px;
-  background: var(--bg);
-}
-/* content fades out as it scrolls under the composer */
-.composer-outer::before {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  right: 0;
-  height: 18px;
-  background: linear-gradient(to bottom, transparent, var(--bg));
-  pointer-events: none;
+  /* transparent: the app-shell aurora paints the ground behind the glass box */
 }
 .composer-inner {
   max-width: var(--measure);
@@ -117,7 +106,11 @@ defineExpose({ focus });
 .box {
   border: 1px solid var(--border);
   border-radius: var(--radius-l);
-  background: var(--surface);
+  /* frosted glass: the aurora and scrolled-under transcript read through
+     the blur while the text on top stays legible */
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
   padding: 10px 12px 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }

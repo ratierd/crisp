@@ -114,6 +114,8 @@ const startResize = (event: PointerEvent) => {
   background: var(--bg-inset);
   border-right: 1px solid var(--border-faint);
   min-height: 0;
+  /* over the full-bleed aurora band (App.vue), which runs beneath it */
+  z-index: 10;
 }
 .resize-handle {
   position: absolute;
