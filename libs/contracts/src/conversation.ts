@@ -14,6 +14,8 @@ export type MessagePart = z.infer<typeof messagePartSchema>;
 export const runStatsSchema = z.object({
   ttftMs: z.number(),
   tokensPerSec: z.number(),
+  /** Wall-clock run time; absent on messages persisted before it existed. */
+  durationMs: z.number().optional(),
 });
 export type RunStats = z.infer<typeof runStatsSchema>;
 

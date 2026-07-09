@@ -81,6 +81,7 @@ export class RunService {
           stats: {
             ttftMs: (firstTokenAt ?? finishedAt) - startedAt,
             tokensPerSec: streamMs > 0 ? Math.round((deltaCount / streamMs) * 1000) : deltaCount,
+            durationMs: finishedAt - startedAt,
           },
           ...(stoppedEarly ? { stoppedEarly: true } : {}),
         };

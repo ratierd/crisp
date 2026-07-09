@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { Feedback, RunStats } from '@crisp/contracts';
+import { formatDuration } from '../lib/relative-time';
 import MarkdownBlocks from './MarkdownBlocks.vue';
 
 const props = defineProps<{
@@ -15,10 +16,9 @@ const props = defineProps<{
 const emit = defineEmits<{ regenerate: []; feedback: [score: 'up' | 'down' | null, comment?: string] }>();
 
 const formatStats = (stats: RunStats, modelName?: string | null) => {
-  const seconds = (stats.ttftMs / 1000).toFixed(1);
-  const model = modelName ? ` · ${modelName}` : '';
-  // tokensPerSec counts stream deltas (chunks), not model tokens — label honestly
-  return `${seconds}s to first token · ${Math.round(stats.tokensPerSec)} chunks/s${model}`;
+  // messages persisted before durationMs existed show just the model name
+  const took = stats.durationMs !== undefined ? `took ${formatDuration(stats.durationMs)}` : '';
+  return [took, modelName].filter(Boolean).join(' · ');
 };
 
 // A vote targets one specific Run; clicking the active thumb retracts it.

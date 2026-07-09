@@ -169,9 +169,12 @@ describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {
 
     await collect(runByo([userWire('hi')]));
 
-    const report = mocks.postByoRun.mock.calls[0]![1] as unknown as { stats: { ttftMs: number; tokensPerSec: number } };
+    const report = mocks.postByoRun.mock.calls[0]![1] as unknown as {
+      stats: { ttftMs: number; tokensPerSec: number; durationMs: number };
+    };
     expect(report.stats.ttftMs).toBe(250);
     expect(report.stats.tokensPerSec).toBe(2); // 2 chunks over 1s of streaming
+    expect(report.stats.durationMs).toBe(1250); // run start to report time
     now.mockRestore();
   });
 

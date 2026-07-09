@@ -47,7 +47,7 @@ describe('messageSchema', () => {
       parts: [{ type: 'text' as const, content: 'hello' }],
       createdAt: new Date().toISOString(),
       modelId: 'demo/demo',
-      stats: { ttftMs: 120, tokensPerSec: 42 },
+      stats: { ttftMs: 120, tokensPerSec: 42, durationMs: 1300 },
       stoppedEarly: true,
     };
     expect(messageSchema.parse(message)).toEqual(message);

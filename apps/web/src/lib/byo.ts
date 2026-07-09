@@ -147,7 +147,8 @@ async function* runByoModel(model: Model, wireMessages: WireLike[], signal: Abor
   const report = async (outcome: ByoRunRequest['outcome']) => {
     if (reported) return;
     reported = true;
-    const streamMs = firstTokenPerf > 0 ? performance.now() - firstTokenPerf : 0;
+    const reportPerf = performance.now();
+    const streamMs = firstTokenPerf > 0 ? reportPerf - firstTokenPerf : 0;
     await api.postByoRun(threadId, {
       runId,
       modelId: model.id,
@@ -158,6 +159,7 @@ async function* runByoModel(model: Model, wireMessages: WireLike[], signal: Abor
       stats: {
         ttftMs: firstTokenPerf > 0 ? Math.round(firstTokenPerf - startedPerf) : 0,
         tokensPerSec: streamMs > 0 ? Math.round((tokenCount / streamMs) * 1000) : tokenCount,
+        durationMs: Math.round(reportPerf - startedPerf),
       },
       usage,
       startedAt,

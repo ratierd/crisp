@@ -77,11 +77,13 @@ const chat = useChat({
         break;
       case 'RUN_FINISHED': {
         if (liveMessageId && firstTokenAt > 0) {
-          const streamMs = performance.now() - firstTokenAt;
+          const finishedPerf = performance.now();
+          const streamMs = finishedPerf - firstTokenAt;
           meta.set(liveMessageId, {
             stats: {
               ttftMs: Math.round(firstTokenAt - runStartedAt),
               tokensPerSec: streamMs > 0 ? (tokenCount / streamMs) * 1000 : tokenCount,
+              durationMs: Math.round(finishedPerf - runStartedAt),
             },
             modelName: liveModelName,
             runId: liveRunId.value ?? undefined,

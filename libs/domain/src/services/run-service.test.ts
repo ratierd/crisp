@@ -64,6 +64,7 @@ describe('RunService.execute', () => {
     expect(messages[1]!.parts[0]!.content).toBe('Hello streaming world');
     expect(messages[1]!.modelId).toBe('demo/demo');
     expect(messages[1]!.stats).toBeDefined();
+    expect(messages[1]!.stats!.durationMs).toBeGreaterThanOrEqual(messages[1]!.stats!.ttftMs);
     expect(messages[1]!.stoppedEarly).toBeUndefined();
 
     const [runId] = [...runStreams.events.keys()];
