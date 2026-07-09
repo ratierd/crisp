@@ -167,6 +167,47 @@ describe('POST /api/chat', () => {
     expect(convs.some((c) => c.id === 'conv-1')).toBe(true);
   });
 
+  it('persists a leading Tour Context system message once, at creation (ADR-0009)', async () => {
+    const { request, conversations } = makeApp();
+    const tour = {
+      id: 'tour-ctx-1',
+      role: 'system',
+      parts: [{ type: 'text', content: 'You are inside Crisp. Explain it when asked.' }],
+    };
+    const tourBody = (text: string, id: string) =>
+      chatBody('conv-tour', text, {
+        messages: [tour, { id, role: 'user', parts: [{ type: 'text', content: text }] }],
+      });
+
+    const first = await request('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(tourBody('What can Crisp do?', 'u-tour-1')),
+    });
+    await readSse(first);
+    await waitFor(() => (conversations.messages.get('conv-tour')?.length ?? 0) === 3);
+    const messages = conversations.messages.get('conv-tour')!;
+    expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant']);
+    expect(messages[0]!.id).toBe('tour-ctx-1');
+
+    // the title derives from the first user turn, never from the Tour Context
+    const owner = conversations.owners.get('conv-tour')!;
+    const conversation = await conversations.get('conv-tour', owner);
+    expect(conversation!.title).not.toContain('inside Crisp');
+
+    // the follow-up resends the transcript; the context is not re-persisted
+    const second = await request('/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(tourBody('And the architecture?', 'u-tour-2')),
+    });
+    await readSse(second);
+    await waitFor(() => (conversations.messages.get('conv-tour')?.length ?? 0) === 5);
+    expect(
+      conversations.messages.get('conv-tour')!.filter((m) => m.role === 'system'),
+    ).toHaveLength(1);
+  });
+
   it('emits a typed RUN_ERROR and persists no assistant message', async () => {
     const { app, conversations } = makeApp();
     const response = await app.request('/api/chat', {
@@ -503,6 +544,53 @@ describe('POST /api/conversations/:id/byo-runs', () => {
     expect(retry.status).toBe(200);
     expect(((await retry.json()) as { deduped?: boolean }).deduped).toBe(true);
     expect(conversations.messages.get('conv-byo-retry')!).toHaveLength(2);
+  });
+
+  it('persists the Tour Context from a report once, at creation (ADR-0009)', async () => {
+    const { request, conversations } = makeApp();
+    const systemMessage = {
+      id: 'tour-ctx-byo',
+      role: 'system',
+      parts: [{ type: 'text', content: 'You are inside Crisp.' }],
+      createdAt: new Date().toISOString(),
+    };
+    await request('/api/conversations/conv-byo-tour/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(report({ runId: crypto.randomUUID(), systemMessage })),
+    });
+    expect(conversations.messages.get('conv-byo-tour')!.map((m) => m.role)).toEqual([
+      'system',
+      'user',
+      'assistant',
+    ]);
+
+    // a later report into the same conversation does not re-persist it
+    await request('/api/conversations/conv-byo-tour/byo-runs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(
+        report({
+          runId: crypto.randomUUID(),
+          systemMessage,
+          userMessage: {
+            id: 'u-byo-2',
+            role: 'user',
+            parts: [{ type: 'text', content: 'more' }],
+            createdAt: new Date().toISOString(),
+          },
+          history: [
+            { role: 'system', content: 'You are inside Crisp.' },
+            { role: 'user', content: 'hi from the browser' },
+            { role: 'assistant', content: 'hello from your own machine' },
+            { role: 'user', content: 'more' },
+          ],
+        }),
+      ),
+    });
+    const messages = conversations.messages.get('conv-byo-tour')!;
+    expect(messages.filter((m) => m.role === 'system')).toHaveLength(1);
+    expect(messages).toHaveLength(5);
   });
 
   it('persists nothing but still accepts a failed run report', async () => {

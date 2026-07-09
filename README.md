@@ -7,6 +7,12 @@ streaming LLM responses over the [AG-UI protocol](https://docs.ag-ui.com/) —
 from remote providers (Anthropic, OpenAI, OpenRouter) and local ones (Ollama),
 plus a zero-key **Demo** model so the app works the moment it starts.
 
+The fastest way to evaluate it is to ask it: the empty state suggests four
+**Tour Questions** (features, architecture, monitoring, streaming). The Demo
+model answers them from a canned script; any real model answers them from a
+briefing injected as the conversation's first message while the composer's
+**Tour** toggle is on (ADR-0009).
+
 **Hosted**: <https://crisp-production-0b9e.up.railway.app> — connect OpenRouter
 in one click (OAuth, no key to paste), paste your own provider key in the
 picker (BYOK), or connect [your own Ollama](docs/byo-ollama.md). The hosted
@@ -109,6 +115,12 @@ Everything is optional (`bun setup` fills these interactively; see
 
 ## What it does
 
+- **The product gives its own tour**: the empty-state chips ask Crisp about
+  itself. With **Tour mode** on (composer toggle, default on), a new
+  conversation opens with a persisted system-message briefing, so the model
+  you picked — remote or your own Ollama — answers accurately; the transcript
+  discloses it behind a "Tour context attached" note. The Demo model answers
+  from a canned script instead (ADR-0009).
 - **Streaming chat** over AG-UI events (SSE), with markdown + Shiki-highlighted
   code blocks rendered incrementally — only the growing tail block re-renders.
 - **Model picker with health gating**: `GET /api/models` doubles as a health
@@ -261,10 +273,11 @@ Other tradeoffs, honestly:
 - **Tracing** (Vitest): the LangSmith gateway decorator against a fake client —
   completed/stopped/failed/consumer-break outcomes, usage mapping, and that a
   dead LangSmith never disturbs the stream.
-- **E2E** (Playwright): smoke (empty state → streamed markdown → conversation
-  listed → latency footer), chat flows (stop → regenerate, error card → retry,
-  refresh-mid-stream resume), and honest-health degradation. Deterministic
-  because they run on the Demo model.
+- **E2E** (Playwright): smoke (Tour chip → streamed markdown → conversation
+  listed → latency footer, Tour-mode-off sends clean conversations), chat
+  flows (stop → regenerate, error card → retry, refresh-mid-stream resume),
+  and honest-health degradation. Deterministic because they run on the Demo
+  model.
 
 ## With more time
 

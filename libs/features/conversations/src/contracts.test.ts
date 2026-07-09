@@ -14,4 +14,20 @@ describe('messageSchema', () => {
     };
     expect(messageSchema.parse(message)).toEqual(message);
   });
+
+  it('accepts a system message (the Tour Context, ADR-0009)', () => {
+    const message = {
+      id: 's1',
+      role: 'system' as const,
+      parts: [{ type: 'text' as const, content: 'You are inside Crisp.' }],
+      createdAt: new Date().toISOString(),
+    };
+    expect(messageSchema.parse(message)).toEqual(message);
+  });
+
+  it('still rejects unknown roles', () => {
+    expect(
+      messageSchema.safeParse({ id: 'x', role: 'tool', parts: [], createdAt: '' }).success,
+    ).toBe(false);
+  });
 });

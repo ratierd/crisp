@@ -1,23 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Crisp smoke (Demo model)', () => {
-  test('first run: empty state → streamed markdown answer → conversation listed', async ({
+  test('first run: Tour chip → streamed markdown answer → conversation listed', async ({
     page,
   }) => {
     await page.goto('/');
 
-    // empty state
+    // empty state suggests the Tour Questions (ADR-0009)
     await expect(page.getByRole('heading', { name: 'Start a conversation.' })).toBeVisible();
-
-    // send via the composer
-    await page.getByPlaceholder('Write a message…').fill('walk me through markdown');
-    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'What can Crisp do? Show me around.' }).click();
 
     // streaming state: stop affordance + live indicator
     await expect(page.getByRole('button', { name: /stop/i })).toBeVisible();
     await expect(page.getByText('run live')).toBeVisible();
 
-    // streamed markdown renders: the Demo showcase has an h2 and a code block
+    // the Tour Context rides the conversation, disclosed but out of the flow
+    await expect(page.getByText('Tour context attached', { exact: false })).toBeVisible();
+
+    // streamed markdown renders: the feature tour has an h2 and a code block
     await expect(page.locator('.prose h2').first()).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.code-block')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.code-block-copy').first()).toHaveText('copy');
@@ -26,8 +26,19 @@ test.describe('Crisp smoke (Demo model)', () => {
     await expect(page.getByText(/took .+ · Demo/)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
 
-    // conversation shows up in the sidebar with a title
-    await expect(page.locator('.item .title').first()).toContainText(/markdown/i);
+    // conversation shows up in the sidebar, titled (fallback first, then the
+    // canned tour title on the next refetch — both contain "Crisp")
+    await expect(page.locator('.item .title').first()).toContainText(/crisp/i);
+  });
+
+  test('Tour mode off: the conversation opens without the Tour Context', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Tour', exact: true }).click(); // toggle off
+    await page.getByPlaceholder('Write a message…').fill('hello there');
+    await page.keyboard.press('Enter');
+
+    await expect(page.getByText(/took .+ · Demo/)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Tour context attached', { exact: false })).toHaveCount(0);
   });
 
   test('typed error card with retry', async ({ page }) => {

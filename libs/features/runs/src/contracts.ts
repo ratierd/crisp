@@ -80,6 +80,8 @@ export const byoRunRequestSchema = z.object({
   history: z.array(byoHistoryMessageSchema).min(1).max(100),
   /** Absent when regenerating (the user Message is already persisted). */
   userMessage: messageSchema.optional(),
+  /** The Tour Context the run opened with — persisted if this report creates the Conversation (ADR-0009). */
+  systemMessage: messageSchema.optional(),
   assistantText: z.string().max(131_072),
   outcome: z.enum(['completed', 'stopped', 'failed']),
   stats: runStatsSchema,

@@ -9,7 +9,7 @@ A persisted thread of Messages, owned by the server (SQLite). Has a title and an
 _Avoid_: Chat, thread, session
 
 **Message**:
-A single user or assistant entry within a Conversation, composed of parts (text, thinking, tool calls) per the AG-UI model.
+A single user, assistant, or system entry within a Conversation, composed of parts (text, thinking, tool calls) per the AG-UI model. The only system Message is the Tour Context at the head of a Conversation.
 
 **Run**:
 One generation attempt by a model in response to the Conversation state. While live, its event stream is buffered in the RunStreamStore so clients can reattach mid-generation.
@@ -33,6 +33,10 @@ _Avoid_: Provider type, origin, self-hosted
 **BYOK**:
 Bring-your-own-key: a user-supplied provider API key that rides a chat request, makes an env-unavailable remote Model usable for that Run, and is billed to the user's own account. Acquired by pasting from the provider's console or minted in one click via OpenRouter's connect flow. Held in the user's browser, passed through the server per-request, never stored there.
 _Avoid_: User token, credential, session key
+
+**Tour**:
+The product explaining itself: Tour Questions (the empty-state suggestion chips) ask about Crisp's features, architecture, and monitoring, and the Tour Context (a system Message persisted at the head of a Conversation) lets any Model answer them accurately. Tour Mode is the composer toggle (default on) that seeds new Conversations with the Tour Context.
+_Avoid_: Showcase, guide, onboarding
 
 **Feature Slice**:
 The unit of ownership: one user-visible capability (conversations, runs, titling, feedback, models) owning its contracts, its ports, and its behavior. Other slices reach it through its contracts only (ADR-0008).

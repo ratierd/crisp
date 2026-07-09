@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
+import { useAppStore } from '../stores/app';
 import ModelPicker from './ModelPicker.vue';
+
+const store = useAppStore();
 
 const props = defineProps<{ running: boolean; reconnecting: boolean; noModel?: boolean }>();
 const emit = defineEmits<{ send: [text: string]; stop: [] }>();
@@ -53,6 +56,17 @@ defineExpose({ focus });
         />
         <div class="bottom-row">
           <ModelPicker />
+          <button
+            type="button"
+            class="tour"
+            :class="{ on: store.tourMode }"
+            :aria-pressed="store.tourMode"
+            title="New conversations know how Crisp was built"
+            @click="store.setTourMode(!store.tourMode)"
+          >
+            <span class="tour-dot" />
+            Tour
+          </button>
           <div class="spacer" />
           <button v-if="running" class="stop" type="button" @click="$emit('stop')">
             <span class="stop-square" />
@@ -130,6 +144,37 @@ textarea {
 }
 .spacer {
   flex: 1;
+}
+.tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-3);
+}
+.tour:hover {
+  border-color: var(--accent);
+  color: var(--text-2);
+}
+.tour.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle, transparent);
+}
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+  opacity: 0.35;
+}
+.tour.on .tour-dot {
+  opacity: 1;
 }
 .send {
   width: 34px;

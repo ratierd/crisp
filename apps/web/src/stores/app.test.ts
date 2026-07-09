@@ -53,6 +53,21 @@ beforeEach(() => {
   setActivePinia(createPinia());
 });
 
+describe('Tour Mode (ADR-0009)', () => {
+  it('defaults on for a fresh browser and persists the choice', () => {
+    const store = useAppStore();
+    expect(store.tourMode).toBe(true);
+
+    store.setTourMode(false);
+    expect(store.tourMode).toBe(false);
+    expect(localStorage.getItem('crisp:tour-mode')).toBe('off');
+
+    // a fresh store (new tab) reads the persisted choice
+    setActivePinia(createPinia());
+    expect(useAppStore().tourMode).toBe(false);
+  });
+});
+
 describe('initial layout state (CLS guard)', () => {
   it('derives narrow from the 779px media query and starts with the sidebar closed when narrow', () => {
     stubMatchMedia({ narrow: true });

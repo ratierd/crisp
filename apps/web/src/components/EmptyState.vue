@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { TOUR_QUESTIONS } from '../lib/tour';
+
 defineProps<{
   /** The Demo model is the current selection — its zero-key promise holds. */
   demoSelected: boolean;
@@ -7,13 +9,10 @@ defineProps<{
 }>();
 defineEmits<{ suggest: [text: string] }>();
 
-// End-customer support questions (Crisp pitches at support-agent products):
-// the highest-volume intents virtually every business sees.
-const CHIPS = [
-  'Where is my order? It was supposed to arrive on Monday',
-  'I was charged twice for the same purchase — can I get a refund?',
-  'How do I change the shipping address on my order?',
-];
+// The Tour Questions (ADR-0009): the product guides its own evaluation. The
+// Demo model answers them from a canned script; real models answer from the
+// Tour Context that Tour Mode injects.
+const CHIPS = TOUR_QUESTIONS;
 </script>
 
 <template>

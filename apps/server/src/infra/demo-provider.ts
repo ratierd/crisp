@@ -1,66 +1,12 @@
 import type { RunEvent, StartRunOptions } from '@crisp/runs';
-
-const SHOWCASE = `Here's a quick tour of what Crisp renders — streamed straight from the zero-key **Demo** model.
-
-## Markdown, properly
-
-Prose is the hero here: paragraphs, *emphasis*, **strong text**, and \`inline code\` all flow as regular typography. Lists too:
-
-- Streaming arrives token by token over AG-UI events
-- Every Run is buffered, so a page refresh reattaches mid-generation
-- Provenance (\`local\` vs \`remote\`) is a property of the Model, not the code
-
-> Blockquotes get a quiet accent border — information, not decoration.
-
-## Code blocks
-
-\`\`\`ts
-type Provenance = 'local' | 'remote';
-
-interface Model {
-  id: string;
-  displayName: string;
-  provenance: Provenance; // invisible to the domain logic
-}
-
-const pick = (models: Model[]) =>
-  models.find((m) => m.provenance === 'local') ?? models[0];
-\`\`\`
-
-## Tables
-
-| Piece | Role |
-| --- | --- |
-| ModelGateway | starts a Run against any Model |
-| RunStreamStore | buffers live events for resume |
-| ConversationRepository | durable history |
-
-Try switching models from the composer — or ask me anything else and I'll keep improvising.`;
-
-const OKLCH_ANSWER = `OKLCH is a way of describing color by how it *looks*, not by how a screen mixes it.
-
-- **L — lightness** (0–100%): how bright the color appears. Two colors with the same L genuinely look equally bright, which RGB can't promise.
-- **C — chroma**: how colorful it is, from gray (0) upward. Unlike HSL "saturation", chroma is absolute — you can compare it across hues.
-- **H — hue**: the angle on the color wheel, 0–360.
-
-The designer's win: build a palette by *fixing* two channels and sweeping the third.
-
-\`\`\`css
---accent:        oklch(55% 0.19 258); /* brand blue */
---accent-hover:  oklch(50% 0.19 258); /* same color, just darker */
---accent-subtle: oklch(93.5% 0.04 258); /* same hue, washed out */
-\`\`\`
-
-Change \`258\` to \`60\` and the whole system becomes orange — with the same perceived contrast. That's why design tokens love it.`;
+import { pickTourEntry } from './tour-script';
 
 const ERROR_TRIGGER = /error:(provider_unavailable|auth_failed|rate_limited|unknown)/;
 
+/** Tour answers for chat runs; the matching canned title for titling runs. */
 const pickResponse = (lastUserText: string, systemText: string): string => {
-  if (/short title/i.test(systemText)) {
-    return /oklch/i.test(lastUserText) ? 'OKLCH for designers' : 'A quick markdown tour';
-  }
-  if (/oklch/i.test(lastUserText)) return OKLCH_ANSWER;
-  return SHOWCASE;
+  const entry = pickTourEntry(lastUserText);
+  return /short title/i.test(systemText) ? entry.title : entry.answer;
 };
 
 /** Splits text into small chunks that feel like tokens when streamed. */

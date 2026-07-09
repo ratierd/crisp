@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { feedbackSchema } from '@crisp/feedback/contracts';
 
-export const messageRoleSchema = z.enum(['user', 'assistant']);
+/** `system` exists for the Tour Context: one briefing Message persisted at the head of a Conversation (ADR-0009). */
+export const messageRoleSchema = z.enum(['user', 'assistant', 'system']);
 export type MessageRole = z.infer<typeof messageRoleSchema>;
 
 /** Message parts follow the AG-UI model; Crisp renders text and thinking. */

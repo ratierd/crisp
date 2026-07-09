@@ -161,6 +161,28 @@ describe('crispConnection routing', () => {
     await collect(runByo([userWire('hi')]));
     expect(mocks.createOllamaChat).toHaveBeenCalledWith('llama3.2:3b', 'http://localhost:11434');
   });
+
+  it('carries the Tour Context: system prompt to the model, systemMessage in the report', async () => {
+    const systemWire = {
+      id: 'tour-1',
+      role: 'system',
+      parts: [{ type: 'text', content: 'You are inside Crisp.' }],
+    };
+    await collect(runByo([systemWire, userWire('What can Crisp do?')]));
+
+    // the daemon call received it as a system prompt, not a chat turn
+    expect(mocks.chat.mock.calls[0]![0]).toMatchObject({
+      systemPrompts: ['You are inside Crisp.'],
+      messages: [{ role: 'user', content: 'What can Crisp do?' }],
+    });
+
+    // the report carries it so the server can persist it at creation
+    const [, report] = mocks.postByoRun.mock.calls[0]! as unknown as [
+      string,
+      Record<string, unknown>,
+    ];
+    expect(report.systemMessage).toMatchObject({ id: 'tour-1', role: 'system' });
+  });
 });
 
 describe('runByoModel reporting (persistence before RUN_FINISHED)', () => {

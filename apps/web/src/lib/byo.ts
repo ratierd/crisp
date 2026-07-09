@@ -96,7 +96,7 @@ async function* runByoModel(
   const runId = crypto.randomUUID();
   // Same reading the server does (@crisp/ai wire codec) — the history run
   // here and the report persisted below can never diverge.
-  const { history, trailingUserMessage } = readWireMessages(wireMessages);
+  const { history, trailingUserMessage, leadingSystemMessage } = readWireMessages(wireMessages);
   const userMessage = trailingUserMessage ?? undefined;
   const startedAt = Date.now();
   const startedPerf = performance.now();
@@ -117,6 +117,9 @@ async function* runByoModel(
       modelId: model.id,
       history,
       userMessage,
+      // the Tour Context this run opened with (persisted if the report
+      // creates the Conversation, ADR-0009)
+      ...(leadingSystemMessage ? { systemMessage: leadingSystemMessage } : {}),
       assistantText: text,
       outcome,
       stats: {

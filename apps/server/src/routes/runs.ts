@@ -36,7 +36,7 @@ export const registerRunRoutes = (app: Hono<AppEnv>, deps: RunRoutesDeps) => {
 
     // One reading (@crisp/ai wire codec): the history the Model runs and the
     // user Message persisted below can never come from divergent parses.
-    const { history, trailingUserMessage } = readWireMessages(messages);
+    const { history, trailingUserMessage, leadingSystemMessage } = readWireMessages(messages);
     if (history.length === 0) return c.json({ error: 'No usable messages in request.' }, 400);
 
     // One live Run per Conversation, enforced atomically: the claim happens
@@ -63,6 +63,11 @@ export const registerRunRoutes = (app: Hono<AppEnv>, deps: RunRoutesDeps) => {
           // The id exists under another visitor — refuse, release the claim.
           await deps.runStreams.releaseActiveRun(conversationId, runId).catch(() => {});
           return c.json({ error: 'Conversation id is unavailable.' }, 409);
+        }
+        // Tour Mode (ADR-0009): a Conversation opened with a Tour Context
+        // keeps it — persisted once, at creation, ahead of the first exchange.
+        if (leadingSystemMessage) {
+          await deps.messages.appendMessage(conversationId, leadingSystemMessage);
         }
       } else if (userMessage && existing.messages.some((m) => m.id === userMessage!.id)) {
         // Regenerate/retry resends history ending at an already-persisted user
@@ -116,6 +121,12 @@ export const registerRunRoutes = (app: Hono<AppEnv>, deps: RunRoutesDeps) => {
         // The id exists under another visitor (scoped get can't see it):
         // refuse rather than write into someone else's conversation.
         return c.json({ error: 'Conversation id is unavailable.' }, 409);
+      }
+      // Tour Mode (ADR-0009): same rule as /api/chat — the Tour Context the
+      // run opened with is persisted once, when the report creates the
+      // Conversation.
+      if (report.systemMessage) {
+        await deps.messages.appendMessage(conversationId, report.systemMessage);
       }
     } else if (userMessage && existing.messages.some((m) => m.id === userMessage!.id)) {
       // regenerate resends history ending at an already-persisted user message

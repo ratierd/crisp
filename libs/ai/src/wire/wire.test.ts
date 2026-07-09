@@ -65,7 +65,39 @@ describe('readWireMessages — history', () => {
   });
 
   it('reads an empty request as an empty history, not an error', () => {
-    expect(readWireMessages([])).toEqual({ history: [], trailingUserMessage: null });
+    expect(readWireMessages([])).toEqual({
+      history: [],
+      trailingUserMessage: null,
+      leadingSystemMessage: null,
+    });
+  });
+});
+
+describe('readWireMessages — leading system Message (the Tour Context)', () => {
+  it('returns the first message as a persistable Message when it is a system turn', () => {
+    const { leadingSystemMessage } = readWireMessages([
+      { id: 's1', role: 'system', content: 'You are inside Crisp.' },
+      user('question'),
+    ]);
+    expect(leadingSystemMessage).toMatchObject({
+      id: 's1',
+      role: 'system',
+      parts: [{ type: 'text', content: 'You are inside Crisp.' }],
+    });
+    expect(typeof leadingSystemMessage?.createdAt).toBe('string');
+  });
+
+  it('is null when the conversation does not open with a system turn', () => {
+    const { leadingSystemMessage } = readWireMessages([
+      user('question'),
+      { role: 'system', content: 'not leading' },
+    ]);
+    expect(leadingSystemMessage).toBeNull();
+  });
+
+  it('is null when the leading system message has no text', () => {
+    const { leadingSystemMessage } = readWireMessages([{ role: 'system', content: '' }]);
+    expect(leadingSystemMessage).toBeNull();
   });
 });
 

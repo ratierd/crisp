@@ -6,12 +6,14 @@ import type { Feedback } from '@crisp/feedback/contracts';
 import type { RunErrorKind } from '@crisp/runs/contracts';
 import * as api from '../lib/api';
 import { crispConnection, isByoModelId } from '../lib/byo';
+import { tourContextMessage } from '../lib/tour';
 import { useAppStore } from '../stores/app';
 import ComposerBox from './ComposerBox.vue';
 import EmptyState from './EmptyState.vue';
 import ErrorCard from './ErrorCard.vue';
 import MessageAssistant from './MessageAssistant.vue';
 import MessageUser from './MessageUser.vue';
+import TourContextNote from './TourContextNote.vue';
 
 const props = defineProps<{ conversationId: string }>();
 const emit = defineEmits<{ exchanged: [] }>();
@@ -150,6 +152,12 @@ const isEmpty = computed(
   () => view.value.length === 0 && !reconnecting.value && resumeText.value === null,
 );
 
+/** The Tour Context heading this Conversation, when it opened with one. */
+const tourContextText = computed(() => {
+  const first = chat.messages.value[0];
+  return first?.role === 'system' ? textOf(first) : null;
+});
+
 // ---- actions -------------------------------------------------------------
 
 // No usable Model (deployed with the demo hidden, nothing connected yet):
@@ -163,6 +171,12 @@ const modelReady = computed(
 const send = (text: string) => {
   if (running.value || reconnecting.value || !modelReady.value) return;
   errorInfo.value = null;
+  // Tour Mode (ADR-0009): a new Conversation opens with the Tour Context —
+  // seeded client-side so both the server path and BYO Ollama carry it, and
+  // persisted by the server when the first send creates the Conversation.
+  if (chat.messages.value.length === 0 && store.tourMode) {
+    chat.setMessages([tourContextMessage()]);
+  }
   liveModelName = store.selectedModel?.displayName ?? '';
   liveByo = isByoModelId(store.selectedModelId);
   void chat.sendMessage(text);
@@ -340,6 +354,7 @@ defineExpose({ running });
           @suggest="send"
         />
         <template v-else>
+          <TourContextNote v-if="tourContextText" :text="tourContextText" />
           <template v-for="message in view" :key="message.id">
             <MessageUser v-if="message.role === 'user'" :text="message.text" />
             <MessageAssistant

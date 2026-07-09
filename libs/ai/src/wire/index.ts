@@ -28,6 +28,8 @@ export interface WireReading {
   history: HistoryMessage[];
   /** The trailing user Message of the request, persistable, or null. */
   trailingUserMessage: Message | null;
+  /** The leading system Message (the Tour Context), persistable, or null. */
+  leadingSystemMessage: Message | null;
 }
 
 const ANCHOR_ROLES = new Set(['user', 'assistant', 'system']);
@@ -67,21 +69,24 @@ export const readWireMessages = (messages: unknown[]): WireReading => {
     }))
     .filter((message) => message.content.length > 0);
 
-  const last = wire.at(-1);
-  let trailingUserMessage: Message | null = null;
-  if (last && last.role === 'user') {
-    const content = wireText(last);
-    if (content.length > 0) {
-      trailingUserMessage = {
-        id: typeof last.id === 'string' && last.id.length > 0 ? last.id : crypto.randomUUID(),
-        role: 'user',
-        parts: [{ type: 'text', content }],
-        createdAt: new Date().toISOString(),
-      };
-    }
-  }
+  const asMessage = (message: WireLike | undefined, role: 'user' | 'system'): Message | null => {
+    if (!message || message.role !== role) return null;
+    const content = wireText(message);
+    if (content.length === 0) return null;
+    return {
+      id:
+        typeof message.id === 'string' && message.id.length > 0 ? message.id : crypto.randomUUID(),
+      role,
+      parts: [{ type: 'text', content }],
+      createdAt: new Date().toISOString(),
+    };
+  };
 
-  return { history, trailingUserMessage };
+  return {
+    history,
+    trailingUserMessage: asMessage(wire.at(-1), 'user'),
+    leadingSystemMessage: asMessage(wire[0], 'system'),
+  };
 };
 
 /**

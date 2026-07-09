@@ -5,6 +5,7 @@ import { keyedProviderOf } from '@crisp/models/contracts';
 import * as api from '../lib/api';
 import { discoverByoModels, shouldAutoDiscover } from '../lib/byo';
 import { loadApiKeys, saveApiKeys, type ApiKeys } from '../lib/keys';
+import { loadTourMode, saveTourMode } from '../lib/tour';
 
 type Theme = 'light' | 'dark';
 
@@ -60,6 +61,8 @@ export const useAppStore = defineStore('app', {
       byoConnected: false,
       /** The visitor's own provider keys (BYOK, ADR-0006) — this browser only. */
       apiKeys: loadApiKeys() as ApiKeys,
+      /** Tour Mode (ADR-0009): new Conversations open with the Tour Context. */
+      tourMode: loadTourMode(),
       theme: (localStorage.getItem(THEME_KEY) as Theme | null) ?? null,
       sidebarOpen: !narrow,
       sidebarWidth: initialSidebarWidth(),
@@ -162,6 +165,11 @@ export const useAppStore = defineStore('app', {
       await api.deleteConversation(id);
       this.conversations = this.conversations.filter((c) => c.id !== id);
       if (this.activeConversationId === id) this.newConversation();
+    },
+
+    setTourMode(on: boolean) {
+      this.tourMode = on;
+      saveTourMode(on);
     },
 
     toggleTheme() {
