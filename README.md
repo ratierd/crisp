@@ -1,5 +1,9 @@
 # Crisp
 
+![CI](https://github.com/ratierd/crisp/actions/workflows/ci.yml/badge.svg)
+
+The repo ships its CI workflow; push to GitHub and the badge goes green (add a `RAILWAY_TOKEN` secret to enable the infra drift gate).
+
 A small, polished multi-AI chat client. Vue 3 SPA talking to a Hono API on Bun,
 streaming LLM responses over the [AG-UI protocol](https://docs.ag-ui.com/) —
 from remote providers (Anthropic, OpenAI, OpenRouter) and local ones (Ollama),
@@ -176,9 +180,11 @@ Recorded as they were made, in [docs/adr/](docs/adr/) and
   in the riskiest code path (stream handling) would be busywork with bug
   surface. The domain only inspects event discriminants.
 - **Redis for resumable runs** (ADR-0001). An in-process buffer would demo the
-  same thing with zero infrastructure; Redis was chosen deliberately to make
-  resumability a first-class, multi-instance-ready concern rather than a demo
-  trick. The cost — a hard dependency — is mitigated by the one-command compose
+  same thing with zero infrastructure; Redis was chosen deliberately.
+  Replay is cross-instance by construction; stop and SQLite currently pin
+  the app to one replica (railway.ts declares this). The path to N>1 is a
+  Redis stop channel and a DB swap — deliberate scope cuts, not oversights.
+  The cost — a hard dependency — is mitigated by the one-command compose
   setup.
 - **Local models stay the user's own** (ADR-0004). A deployed server can
   never reach a visitor's `localhost:11434` — but the page can. All local
@@ -195,6 +201,12 @@ Recorded as they were made, in [docs/adr/](docs/adr/) and
 
 Other tradeoffs, honestly:
 
+- **The hosted instance is hardened for strangers, not tenants.** Per-IP rate
+  limits and a body cap bound abuse; `/api/health` actually pings Redis and
+  SQLite; the container runs as a non-root user; secure headers + CSP protect
+  the localStorage-held BYOK keys. Conversations are scoped to an anonymous
+  browser cookie — not accounts, deliberately. Conversations created before
+  scoping existed are orphaned (visible to nobody) rather than deleted.
 - **The AI client is in-house** (`libs/ai`, ADR-0003). One workspace lib
   carries the provider adapters, the AG-UI envelope, and the useChat
   composable; provider wire formats are ours to track, contained behind

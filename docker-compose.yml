@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    restart: unless-stopped
     ports:
       - '3000:3000'
     environment:
@@ -25,14 +26,17 @@ services:
 
   redis:
     image: redis:8-alpine
+    restart: unless-stopped
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 3s
       timeout: 2s
       retries: 10
-    # Uncomment to reach Redis from the host during development:
+    # Published on loopback only (v4 + v6, `localhost` may resolve to ::1) so
+    # `bun dev` can reach it; not exposed to the network.
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
+      - '[::1]:6379:6379'
 
 volumes:
   crisp-data:

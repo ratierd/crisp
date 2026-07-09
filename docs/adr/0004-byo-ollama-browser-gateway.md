@@ -6,4 +6,6 @@ Rejected: a Railway-hosted Ollama service (dilutes "local" into "self-hosted", c
 
 Amended (2026-07-08): the server-side Ollama path (daemon discovery via `OLLAMA_BASE_URL`, `ollama/` models run by the server) is removed entirely. It only ever worked when the server and the daemon shared a machine — a dev-only situation — so keeping it meant local dev exercised a code path production never would. The browser gateway is now the *only* way local models run; dev and deployed Crisp behave identically. Localhost origins are allowed by Ollama's defaults, so local dev still needs zero daemon config.
 
+Trust boundary: a reported BYO run is unauthenticated client input — the server persists what the browser *claims* happened. Accepted deliberately (the alternative is proxying local models through the server, which this ADR exists to reject), and bounded: runIds are deduped, the body cap limits payload size, and the endpoint sits behind the per-IP rate limit.
+
 Status: accepted

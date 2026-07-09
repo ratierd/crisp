@@ -50,6 +50,8 @@ export default defineRailway(() => {
     //   REDIS_URL = ${{Redis.REDIS_URL}}
     //   LANGSMITH_* = secrets, set via `railway variable set … --stdin`
     env: {
+      // Chowns the /data volume mount to the image's non-root user (Dockerfile USER bun)
+      RAILWAY_RUN_UID: "1000",
       DB_PATH: preserve(),
       REDIS_URL: preserve(),
       LANGSMITH_API_KEY: preserve(),

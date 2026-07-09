@@ -17,6 +17,10 @@ COPY --from=build /repo/apps/server apps/server
 COPY --from=build /repo/libs libs
 COPY --from=build /repo/package.json /repo/tsconfig.base.json ./
 COPY --from=build /repo/apps/web/dist apps/web/dist
+# /data pre-owned by bun: fresh compose named volumes inherit this ownership;
+# on Railway the mount is chowned via RAILWAY_RUN_UID=1000 (.railway/railway.ts).
+RUN mkdir -p /data && chown bun:bun /data
+USER bun
 ENV NODE_ENV=production
 ENV STATIC_DIR=/repo/apps/web/dist
 EXPOSE 3000
