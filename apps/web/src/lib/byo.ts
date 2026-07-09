@@ -21,7 +21,23 @@ import * as api from './api';
 export const BYO_PREFIX = 'byo/';
 export const OLLAMA_LOCAL_URL = 'http://localhost:11434';
 
+/** Set once discovery ever succeeded in this browser; never cleared. */
+const BYO_CONNECTED_KEY = 'crisp:byo-connected';
+
 export const isByoModelId = (id: string): boolean => id.startsWith(BYO_PREFIX);
+
+/**
+ * Whether mount-time discovery should probe localhost:11434 at all. On a
+ * deployed origin the probe is a guaranteed CORS error in the console for
+ * everyone without Ollama, so we only auto-probe where it can plausibly
+ * succeed: local dev, or a browser that has connected before. Opening the
+ * model picker still probes unconditionally.
+ */
+export const shouldAutoDiscover = (): boolean => {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') return true;
+  return localStorage.getItem(BYO_CONNECTED_KEY) === '1';
+};
 
 /** The one-time daemon config that allows this origin. Shown in the picker. */
 export const byoConnectCommand = (): string => `OLLAMA_ORIGINS=${window.location.origin} ollama serve`;
@@ -36,13 +52,16 @@ export const discoverByoModels = async (): Promise<Model[]> => {
     const response = await fetch(`${OLLAMA_LOCAL_URL}/api/tags`, { signal: AbortSignal.timeout(1500) });
     if (!response.ok) return [];
     const body = (await response.json()) as { models?: OllamaTag[] };
-    return (body.models ?? []).map((tag) => ({
+    const models: Model[] = (body.models ?? []).map((tag) => ({
       id: `${BYO_PREFIX}${tag.name}`,
       displayName: tag.name,
       provider: 'Ollama (yours)',
       provenance: 'local',
       available: true,
     }));
+    // remember success so future visits auto-probe again (see shouldAutoDiscover)
+    if (models.length > 0) localStorage.setItem(BYO_CONNECTED_KEY, '1');
+    return models;
   } catch {
     return [];
   }

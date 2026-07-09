@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { byoConnectCommand } from '../lib/byo';
 import { KEYED_PROVIDERS } from '../lib/keys';
 import { useAppStore } from '../stores/app';
@@ -7,11 +7,56 @@ import ProvenanceBadge from './ProvenanceBadge.vue';
 
 const store = useAppStore();
 const open = ref(false);
+const triggerEl = ref<HTMLButtonElement | null>(null);
+const listboxEl = ref<HTMLElement | null>(null);
+
+// listbox keyboard support: focus sits on the listbox, aria-activedescendant
+// points at the active option (rows stay non-focusable, Tab continues on to
+// the BYOK inputs below)
+const activeIndex = ref(-1);
+const optionId = (index: number) => `model-option-${index}`;
 
 const toggle = () => {
   open.value = !open.value;
-  // the user may have just configured OLLAMA_ORIGINS — re-check on open
-  if (open.value && !store.byoConnected) void store.loadModels();
+  if (!open.value) return;
+  // the user may have just configured OLLAMA_ORIGINS or pulled a new model —
+  // re-check on every open (forced probe: this is the explicit opt-in moment)
+  void store.loadModels(true);
+  activeIndex.value = store.models.findIndex((m) => m.id === store.selectedModelId);
+  void nextTick(() => listboxEl.value?.focus());
+};
+
+const close = () => {
+  if (!open.value) return;
+  open.value = false;
+  triggerEl.value?.focus();
+};
+
+const onListKeydown = (event: KeyboardEvent) => {
+  const last = store.models.length - 1;
+  if (last < 0) return;
+  switch (event.key) {
+    case 'ArrowDown':
+      activeIndex.value = Math.min(activeIndex.value + 1, last);
+      break;
+    case 'ArrowUp':
+      activeIndex.value = Math.max(activeIndex.value - 1, 0);
+      break;
+    case 'Home':
+      activeIndex.value = 0;
+      break;
+    case 'End':
+      activeIndex.value = last;
+      break;
+    case 'Enter': {
+      const model = store.models[activeIndex.value];
+      if (model) pick(model.id, model.available);
+      break;
+    }
+    default:
+      return; // anything else (Tab, Esc, …) keeps its default behavior
+  }
+  event.preventDefault();
 };
 
 // BYOK inputs: drafts commit on change/enter, showing a masked placeholder
@@ -27,7 +72,7 @@ const commitKey = (provider: (typeof KEYED_PROVIDERS)[number]['id']) => {
 const pick = (id: string, available: boolean) => {
   if (!available) return;
   store.selectModel(id);
-  open.value = false;
+  close();
 };
 
 const command = byoConnectCommand();
@@ -40,7 +85,7 @@ const copyCommand = async () => {
 
 const onGlobalClick = () => (open.value = false);
 const onKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') open.value = false;
+  if (event.key === 'Escape') close();
 };
 
 onMounted(() => {
@@ -55,7 +100,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="picker" @click.stop>
-    <button class="trigger" type="button" @click="toggle">
+    <button
+      ref="triggerEl"
+      class="trigger"
+      type="button"
+      aria-haspopup="listbox"
+      :aria-expanded="open"
+      @click="toggle"
+    >
       <span class="dot" />
       <span class="name">{{ store.selectedModel?.displayName ?? 'Pick a model' }}</span>
       <ProvenanceBadge v-if="store.selectedModel" :provenance="store.selectedModel.provenance" />
@@ -63,21 +115,36 @@ onBeforeUnmount(() => {
     </button>
 
     <div v-if="open" class="model-popover">
-      <div class="section">MODEL</div>
+      <div class="section" aria-hidden="true">MODEL</div>
       <div
-        v-for="model in store.models"
-        :key="model.id"
-        class="row"
-        :class="{ disabled: !model.available }"
-        @click="pick(model.id, model.available)"
+        ref="listboxEl"
+        role="listbox"
+        aria-label="Model"
+        tabindex="-1"
+        class="listbox"
+        :aria-activedescendant="activeIndex >= 0 ? optionId(activeIndex) : undefined"
+        @keydown="onListKeydown"
       >
-        <div class="row-line">
-          <span class="row-name">{{ model.displayName }}</span>
-          <ProvenanceBadge :provenance="model.provenance" />
-          <span v-if="model.id === store.selectedModelId" class="check">✓</span>
-        </div>
-        <div v-if="!model.available && model.unavailableReason" class="hint">
-          {{ model.unavailableReason }}
+        <div
+          v-for="(model, index) in store.models"
+          :id="optionId(index)"
+          :key="model.id"
+          class="row"
+          role="option"
+          :aria-selected="model.id === store.selectedModelId"
+          :aria-disabled="!model.available || undefined"
+          :class="{ disabled: !model.available, 'kb-active': index === activeIndex }"
+          @click="pick(model.id, model.available)"
+          @mousemove="activeIndex = index"
+        >
+          <div class="row-line">
+            <span class="row-name">{{ model.displayName }}</span>
+            <ProvenanceBadge :provenance="model.provenance" />
+            <span v-if="model.id === store.selectedModelId" class="check">✓</span>
+          </div>
+          <div v-if="!model.available && model.unavailableReason" class="hint">
+            {{ model.unavailableReason }}
+          </div>
         </div>
       </div>
 
@@ -179,12 +246,16 @@ onBeforeUnmount(() => {
   letter-spacing: 0.08em;
   color: var(--text-3);
 }
+.listbox {
+  outline: none; /* the active option carries the highlight instead */
+}
 .row {
   padding: 9px 10px;
   border-radius: 7px;
   cursor: pointer;
 }
-.row:hover {
+.row:hover,
+.row.kb-active {
   background: var(--bg-inset);
 }
 .row.disabled {

@@ -36,11 +36,11 @@
   /* ---- type -------------------------------------------------------- */
   /* code punctuation + heading face (prototype additions) */
   --code-p:   light-dark(oklch(40% 0.015 262), oklch(66% 0.012 262));
-  --font-head: 'Source Serif 4', Georgia, serif;
+  --font-head: 'Source Serif 4 Variable', Georgia, serif;
 
-  --font-prose: 'Source Serif 4', Georgia, serif;      /* assistant prose + headings */
-  --font-ui:    'Public Sans', system-ui, sans-serif;  /* chrome, buttons, user msgs */
-  --font-meta:  'JetBrains Mono', ui-monospace, monospace; /* badges, latency, hints */
+  --font-prose: 'Source Serif 4 Variable', Georgia, serif;      /* assistant prose + headings */
+  --font-ui:    'Public Sans Variable', system-ui, sans-serif;  /* chrome, buttons, user msgs */
+  --font-meta:  'JetBrains Mono Variable', ui-monospace, monospace; /* badges, latency, hints */
 
   /* fluid type scale (min @ 360px viewport, max @ 1200px) */
   --fs-prose: clamp(15.5px, 1.1vw + 12px, 16.5px);

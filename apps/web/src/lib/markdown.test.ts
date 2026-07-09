@@ -45,6 +45,49 @@ describe('splitBlocks', () => {
     const grown = splitBlocks('para one\n\npara two is growing longer');
     expect(grown[0]).toEqual(partial[0]);
   });
+
+  it('keeps leading indent on nested-list continuation after a blank line', () => {
+    const blocks = splitBlocks('- item\n\n  - nested continuation');
+    expect(blocks).toEqual([
+      { type: 'markdown', text: '- item' },
+      { type: 'markdown', text: '  - nested continuation' },
+    ]);
+  });
+
+  describe('final mode (complete messages)', () => {
+    it('keeps markdown between fences in a single block', () => {
+      const blocks = splitBlocks('- one\n\n- two\n\nafter', 'final');
+      expect(blocks).toEqual([{ type: 'markdown', text: '- one\n\n- two\n\nafter' }]);
+    });
+
+    it('still extracts fenced code for the code-block component', () => {
+      const blocks = splitBlocks('before\n\n```ts\nconst a = 1;\n```\n\nafter', 'final');
+      expect(blocks).toEqual([
+        { type: 'markdown', text: 'before' },
+        { type: 'code', lang: 'ts', code: 'const a = 1;' },
+        { type: 'markdown', text: 'after' },
+      ]);
+    });
+
+    it('renders a loose list as one list, not one per item', () => {
+      const [block] = splitBlocks('- one\n\n- two\n\n- three', 'final');
+      const html = renderMarkdown((block as { type: 'markdown'; text: string }).text);
+      expect(html.match(/<ul>/g)).toHaveLength(1);
+      expect(html.match(/<li>/g)).toHaveLength(3);
+    });
+
+    it('resolves reference-style links in the final render', () => {
+      const [block] = splitBlocks('see [the docs][ref]\n\n[ref]: https://example.com', 'final');
+      const html = renderMarkdown((block as { type: 'markdown'; text: string }).text);
+      expect(html).toContain('href="https://example.com"');
+      expect(html).toContain('the docs</a>');
+    });
+
+    it('handles empty and whitespace-only input', () => {
+      expect(splitBlocks('', 'final')).toEqual([]);
+      expect(splitBlocks('  \n\n  ', 'final')).toEqual([]);
+    });
+  });
 });
 
 describe('renderMarkdown', () => {

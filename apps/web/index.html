@@ -4,13 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Crisp</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700&family=Public+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400..600&display=swap"
-      rel="stylesheet"
+    <meta
+      name="description"
+      content="Crisp — a polished multi-model AI chat client. Talk to hosted models, bring your own API keys, or run your own local Ollama, all in one streaming interface."
     />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Applies the saved theme before first paint (kills the theme flash).
+         CSP COUPLING: the server hardcodes the hash of these exact bytes —
+         'sha256-vpGoRp2/fnDvwWqtFe9uDTb4XX3av23ijVVdRJ7CCNs=' — so any byte
+         change here must be mirrored in the server's CSP header. -->
+    <script>var t=localStorage.getItem("crisp:theme");if(t)document.documentElement.dataset.theme=t</script>
+    <!-- fonts are self-hosted (Fontsource variable packages, imported in main.ts) -->
   </head>
   <body>
     <div id="app"></div>

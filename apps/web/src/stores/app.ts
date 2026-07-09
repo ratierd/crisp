@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import type { Conversation, KeyedProvider, Model } from '@crisp/contracts';
 import { keyedProviderOf } from '@crisp/contracts';
 import * as api from '../lib/api';
-import { discoverByoModels } from '../lib/byo';
+import { discoverByoModels, shouldAutoDiscover } from '../lib/byo';
 import { loadApiKeys, saveApiKeys, type ApiKeys } from '../lib/keys';
 
 type Theme = 'light' | 'dark';
@@ -43,6 +43,11 @@ const initialConversation = (): { id: string; fresh: boolean } => {
 export const useAppStore = defineStore('app', {
   state: () => {
     const initial = initialConversation();
+    // Synchronous narrow detection: the ResizeObserver in App.vue only fires
+    // after mount, so deriving this at store creation keeps the first paint
+    // from rendering a sidebar that immediately collapses (CLS). Must match
+    // the observer's `width < 780` breakpoint.
+    const narrow = window.matchMedia('(max-width: 779px)').matches;
     return {
       models: [] as Model[],
       conversations: [] as Conversation[],
@@ -55,9 +60,9 @@ export const useAppStore = defineStore('app', {
       /** The visitor's own provider keys (BYOK, ADR-0006) — this browser only. */
       apiKeys: loadApiKeys() as ApiKeys,
       theme: (localStorage.getItem(THEME_KEY) as Theme | null) ?? null,
-      sidebarOpen: true,
+      sidebarOpen: !narrow,
       sidebarWidth: initialSidebarWidth(),
-      narrow: false,
+      narrow,
     };
   },
 
@@ -81,9 +86,17 @@ export const useAppStore = defineStore('app', {
   },
 
   actions: {
-    async loadModels() {
+    /**
+     * `probeByo` forces the browser-side Ollama probe (the model picker does
+     * this on open); otherwise it only runs where it can plausibly succeed,
+     * so deployed visitors without Ollama never see the CORS error.
+     */
+    async loadModels(probeByo = false) {
       // server registry (demo + remote) + the browser's own view of the user's Ollama
-      const [server, byo] = await Promise.all([api.getModels(), discoverByoModels()]);
+      const [server, byo] = await Promise.all([
+        api.getModels(),
+        probeByo || shouldAutoDiscover() ? discoverByoModels() : Promise.resolve([]),
+      ]);
       this.byoConnected = byo.length > 0;
       // a user key lights up models the server has no key for (BYOK)
       this.models = [...server.map((m) => this.withUserKey(m)), ...byo];

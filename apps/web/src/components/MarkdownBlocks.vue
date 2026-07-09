@@ -5,7 +5,10 @@ import CodeBlock from './CodeBlock.vue';
 
 const props = defineProps<{ source: string; caret?: boolean }>();
 
-const blocks = computed(() => splitBlocks(props.source));
+// While streaming (caret on), split at blank lines so settled blocks stay
+// memoized. Once complete, re-split in 'final' mode: whole markdown spans
+// render in one pass, so loose lists and reference links come out right.
+const blocks = computed(() => splitBlocks(props.source, props.caret ? 'streaming' : 'final'));
 
 const html = (text: string, isLast: boolean) => {
   const rendered = renderMarkdown(text);

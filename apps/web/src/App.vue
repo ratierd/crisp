@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
       <SidebarPanel v-if="store.sidebarOpen" />
       <!-- the main column is the scroll container, so the scrollbar spans the
            full viewport height; top bar and composer are sticky inside it -->
-      <div class="main scroll-region">
+      <main class="main scroll-region">
         <TopBar :running="running" />
         <ChatView
           :key="store.activeConversationId"
@@ -64,7 +64,7 @@ onBeforeUnmount(() => {
           :conversation-id="store.activeConversationId"
           @exchanged="onExchanged"
         />
-      </div>
+      </main>
     </div>
   </div>
 </template>

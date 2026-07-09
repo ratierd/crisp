@@ -16,7 +16,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000',
+      // e2e (and any non-default setup) points this at its server via env
+      '/api': process.env.CRISP_API_ORIGIN ?? 'http://localhost:3000',
     },
   },
 });

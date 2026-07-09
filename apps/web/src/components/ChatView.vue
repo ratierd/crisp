@@ -177,13 +177,7 @@ const stop = async () => {
   endRun();
 };
 
-const retry = () => {
-  errorInfo.value = null;
-  liveModelName = store.selectedModel?.displayName ?? '';
-  liveByo = isByoModelId(store.selectedModelId);
-  void chat.reload();
-};
-
+/** Re-runs the last exchange — serves both error retry and regenerate. */
 const regenerate = () => {
   errorInfo.value = null;
   liveModelName = store.selectedModel?.displayName ?? '';
@@ -361,7 +355,7 @@ defineExpose({ running });
             v-if="errorInfo"
             :kind="errorInfo.kind"
             :provider="errorInfo.provider"
-            @retry="retry"
+            @retry="regenerate"
           />
         </template>
       </div>

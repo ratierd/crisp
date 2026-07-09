@@ -5,6 +5,13 @@ import { useAppStore } from '../stores/app';
 
 const store = useAppStore();
 
+// ⌘K on Apple platforms, Ctrl+K elsewhere — App.vue binds both modifiers.
+const isApplePlatform = /mac|iphone|ipad|ipod/i.test(
+  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ??
+    navigator.platform,
+);
+const shortcutLabel = isApplePlatform ? '⌘K' : 'Ctrl+K';
+
 // drag-to-resize: the sidebar's left edge sits at x=0, so width = clientX
 const resizing = ref(false);
 
@@ -46,17 +53,23 @@ const startResize = (event: PointerEvent) => {
     <button class="new-conversation" type="button" @click="store.newConversation()">
       <span class="plus">+</span>
       New conversation
-      <span class="kbd">Ctrl+K</span>
+      <span class="kbd">{{ shortcutLabel }}</span>
     </button>
 
     <div class="list scroll-region">
       <p v-if="store.conversations.length === 0" class="empty">No conversations yet.</p>
+      <!-- role=button instead of <button>: the row nests the delete button,
+           and buttons cannot contain buttons -->
       <div
         v-for="conversation in store.conversations"
         :key="conversation.id"
         class="item"
         :class="{ active: conversation.id === store.activeConversationId }"
+        role="button"
+        tabindex="0"
         @click="store.openConversation(conversation.id)"
+        @keydown.enter.prevent="store.openConversation(conversation.id)"
+        @keydown.space.prevent="store.openConversation(conversation.id)"
       >
         <div class="row">
           <span v-if="conversation.id === store.activeConversationId" class="dot" />
@@ -245,10 +258,14 @@ const startResize = (event: PointerEvent) => {
   font-family: var(--font-meta);
   font-size: 11px;
   color: var(--text-3);
-  visibility: hidden;
+  /* opacity, not visibility: keeps the button in the tab order so keyboard
+     users can reach it; it reveals on row hover or any keyboard focus */
+  opacity: 0;
 }
-.item:hover .delete {
-  visibility: visible;
+.item:hover .delete,
+.item:focus-within .delete,
+.delete:focus-visible {
+  opacity: 1;
 }
 .delete:hover {
   color: var(--accent);

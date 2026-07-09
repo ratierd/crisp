@@ -17,7 +17,8 @@ const emit = defineEmits<{ regenerate: []; feedback: [score: 'up' | 'down' | nul
 const formatStats = (stats: RunStats, modelName?: string | null) => {
   const seconds = (stats.ttftMs / 1000).toFixed(1);
   const model = modelName ? ` · ${modelName}` : '';
-  return `${seconds}s to first token · ${Math.round(stats.tokensPerSec)} tok/s${model}`;
+  // tokensPerSec counts stream deltas (chunks), not model tokens — label honestly
+  return `${seconds}s to first token · ${Math.round(stats.tokensPerSec)} chunks/s${model}`;
 };
 
 // A vote targets one specific Run; clicking the active thumb retracts it.

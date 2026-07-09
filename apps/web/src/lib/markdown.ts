@@ -14,16 +14,27 @@ export type Block =
   | { type: 'code'; lang: string; code: string }
   | { type: 'open-code'; lang: string; code: string };
 
+/**
+ * `streaming` splits markdown at blank lines so earlier blocks stay memoized
+ * while the tail grows. `final` (complete messages) keeps all markdown between
+ * fences in a single block, so one renderMarkdown pass sees the whole source —
+ * loose lists stay one list and reference-style links resolve. Fenced code is
+ * still extracted in both modes (it routes to the Shiki code-block component).
+ */
+export type SplitMode = 'streaming' | 'final';
+
 const FENCE = /^(```+|~~~+)\s*(\S*)\s*$/;
 
-export const splitBlocks = (source: string): Block[] => {
+export const splitBlocks = (source: string, mode: SplitMode = 'streaming'): Block[] => {
   const blocks: Block[] = [];
   const lines = source.split('\n');
   let plain: string[] = [];
   let fence: { marker: string; lang: string; lines: string[] } | null = null;
 
   const flushPlain = () => {
-    const text = plain.join('\n').trim();
+    // trailing trim only: leading indentation carries meaning (nested-list
+    // continuation lines after a blank line must keep their indent)
+    const text = plain.join('\n').replace(/^\n+/, '').trimEnd();
     if (text.length > 0) blocks.push({ type: 'markdown', text });
     plain = [];
   };
@@ -45,8 +56,10 @@ export const splitBlocks = (source: string): Block[] => {
       continue;
     }
     if (line.trim() === '') {
-      // paragraph boundary: split here so earlier blocks stay memoized
-      flushPlain();
+      // paragraph boundary: split here so earlier blocks stay memoized —
+      // but only while streaming; a complete message renders in one pass
+      if (mode === 'streaming') flushPlain();
+      else plain.push('');
     } else {
       plain.push(line);
     }
