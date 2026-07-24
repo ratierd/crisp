@@ -19,7 +19,7 @@
     "@fontsource-variable/jetbrains-mono": "5.2.8",
     "@fontsource-variable/public-sans": "5.2.7",
     "@fontsource-variable/source-serif-4": "5.2.9",
-    "dompurify": "3.4.11",
+    "dompurify": "3.4.12",
     "markdown-it": "14.3.0",
     "pinia": "3.0.4",
     "shiki": "4.3.1",
